@@ -1,7 +1,7 @@
 export default function TopBar({ user, roleLabel }) {
   return (
-    <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-slate-200">
-      <div className="font-bold text-slate-900 tracking-tight">Leaps&nbsp;Up</div>
+    <header className="relative flex items-center justify-end px-6 py-3 bg-white border-b border-slate-200 min-h-[52px]">
+      <div className="absolute left-1/2 -translate-x-1/2 font-bold text-slate-900 tracking-tight">Leaps&nbsp;Up</div>
       {user && (
         <div className="text-sm text-slate-500 flex items-center gap-2">
           {user.name}

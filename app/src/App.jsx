@@ -3,7 +3,6 @@ import { ROLE_LABELS } from "./data/mockData.js";
 import { loadBootstrap } from "./lib/dataLayer.js";
 import { useAsync } from "./lib/useAsync.js";
 import TopBar from "./components/TopBar.jsx";
-import DevBar from "./components/DevBar.jsx";
 import Loading from "./components/Loading.jsx";
 import Launcher from "./views/Launcher.jsx";
 import AccessDenied from "./views/AccessDenied.jsx";
@@ -58,8 +57,7 @@ export default function App() {
   return (
     <div className="min-h-full flex flex-col">
       <TopBar user={user} roleLabel={user ? ROLE_LABELS[user.role] : null} />
-      <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-8 pb-24">{inner}</main>
-      <DevBar token={token} />
+      <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-8 pb-10">{inner}</main>
     </div>
   );
 }
