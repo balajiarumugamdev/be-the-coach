@@ -9,4 +9,4 @@
 
 export const ENDPOINT =
   "https://script.google.com/macros/s/AKfycbx-r4GMgNHEU9ixxfWnQzlZkV1rgZjbCtNZGlrolFdeJZdDVXG64uAbRNA72v5Ds-1e1w/exec"; // e.g. "https://script.google.com/macros/s/AKfy.../exec"
-export const USE_BACKEND = true;
+export const USE_BACKEND = false;
