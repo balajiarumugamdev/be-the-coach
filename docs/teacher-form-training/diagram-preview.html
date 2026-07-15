@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher-Form App Training — Architecture</title>
+  <style>
+    body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #f6f8fa; color: #1f2328; }
+    header { padding: 24px 32px; border-bottom: 1px solid #d8dee4; background: #ffffff; }
+    header h1 { margin: 0 0 4px; font-size: 20px; }
+    header p { margin: 0; color: #656d76; font-size: 14px; }
+    section { padding: 28px 32px; }
+    h2 { font-size: 17px; margin: 0 0 4px; }
+    .sub { color: #656d76; font-size: 13px; margin: 0 0 18px; }
+    .diagram { background: #ffffff; border: 1px solid #d8dee4; border-radius: 10px; padding: 20px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Teacher-Info Form App — Build with Claude (React + Microsoft Graph)</h1>
+    <p>Non-technical learners build this by prompting Claude. Data lands in an Excel table on OneDrive/SharePoint.</p>
+  </header>
+
+  <section>
+    <h2>App architecture &amp; data flow</h2>
+    <p class="sub">Sign in with Microsoft, submit the form, Graph writes a row to the Excel table.</p>
+    <div class="diagram">
+      <pre class="mermaid">
+flowchart TD
+    Teacher(["Teacher (M365 user)"])
+    subgraph App["React app (Vite) - built by prompting Claude"]
+        Form["Teacher info form"]
+        MSAL["MSAL sign-in&lt;br/&gt;@azure/msal-react"]
+        GraphCall["Graph API call&lt;br/&gt;add row to table"]
+    end
+    Entra["Microsoft Entra ID (Azure AD)&lt;br/&gt;app registration + Graph permissions"]
+    Graph["Microsoft Graph API"]
+    Excel[("Excel workbook table&lt;br/&gt;on OneDrive / SharePoint")]
+
+    Teacher -->|opens app| Form
+    Teacher -->|sign in| MSAL
+    MSAL <-->|"auth + access token"| Entra
+    Form -->|submit| GraphCall
+    GraphCall -->|"token + POST rows/add"| Graph
+    Graph -->|writes row| Excel
+      </pre>
+    </div>
+  </section>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
+</body>
+</html>

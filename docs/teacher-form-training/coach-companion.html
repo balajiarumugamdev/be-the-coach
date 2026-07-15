@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Coach Teaching Guide — Building a Teacher-Info App with Claude</title>
+<style>
+  :root{
+    --bg:#f6f8fa; --panel:#fff; --panel2:#eef1f5; --border:#d8dee4;
+    --text:#1f2328; --muted:#656d76; --accent:#0969da; --accent2:#1a7f37;
+    --amber-bg:#fff3d6; --amber-bd:#e0c060; --amber-tx:#7a5200;
+    --coach-bg:#f3eefd; --coach-bd:#c9b6f0; --coach-tx:#5a3ec8;
+    --say-bg:#e6f7f5; --say-bd:#9ad6cf; --say-tx:#0b5c53;
+    --radius:12px; --shadow:0 1px 3px rgba(27,31,36,.08);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.62;}
+  a{color:var(--accent);}
+  header{background:var(--panel);border-bottom:1px solid var(--border);padding:16px 28px;position:sticky;top:0;z-index:10;}
+  header .row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  header h1{font-size:18px;margin:0;}
+  header .sub{color:var(--muted);font-size:13px;margin:2px 0 0;}
+  .progresswrap{display:flex;align-items:center;gap:10px;min-width:240px;}
+  .progressbar{flex:1;height:8px;background:var(--panel2);border-radius:999px;overflow:hidden;}
+  .progressbar>span{display:block;height:100%;background:var(--accent2);width:0;transition:width .2s;}
+  .progresspct{font-size:12px;color:var(--muted);white-space:nowrap;}
+  .btn{border:1px solid var(--border);background:var(--panel);color:var(--text);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:13px;text-decoration:none;}
+  .btn:hover{border-color:var(--accent);}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+  .btn.primary:hover{background:#0860c8;}
+  .btn.done{background:var(--accent2);border-color:var(--accent2);color:#fff;}
+  .layout{display:grid;grid-template-columns:320px 1fr;gap:0;align-items:start;}
+  @media(max-width:860px){.layout{grid-template-columns:1fr;}}
+  nav{border-right:1px solid var(--border);background:var(--panel);min-height:calc(100vh - 66px);padding:14px 10px;position:sticky;top:66px;max-height:calc(100vh - 66px);overflow-y:auto;}
+  nav .navitem{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:none;background:none;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13.5px;color:var(--text);}
+  nav .navitem:hover{background:var(--panel2);}
+  nav .navitem.active{background:#ddf4ff;font-weight:600;}
+  nav .tick{width:18px;height:18px;flex:0 0 18px;border-radius:50%;border:1.5px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:transparent;}
+  nav .navitem.doneItem .tick{background:var(--accent2);border-color:var(--accent2);color:#fff;}
+  nav .navnum{color:var(--muted);font-size:11px;width:20px;flex:0 0 20px;text-align:right;}
+  main{padding:28px 34px 80px;max-width:840px;}
+  .content h2{font-size:1.55rem;margin:0 0 .2rem;}
+  .content h3{font-size:1.1rem;margin:1.5rem 0 .4rem;color:#0b3d78;}
+  .content p{margin:.6rem 0;}
+  .content ul,.content ol{margin:.5rem 0;padding-left:1.4rem;}
+  .content li{margin:.32rem 0;}
+  .content code{background:var(--panel2);padding:.1rem .35rem;border-radius:.3rem;font-size:.85em;}
+  .content pre{background:#0b1020;color:#e6edf3;padding:.9rem 1rem;border-radius:.5rem;overflow-x:auto;font-size:.85rem;margin:.8rem 0;}
+  .content pre code{background:none;color:inherit;padding:0;}
+  .content table{width:100%;border-collapse:collapse;margin:.8rem 0;font-size:.92rem;}
+  .content th,.content td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top;}
+  .content th{background:var(--panel2);}
+  .lead{font-size:1.02rem;background:var(--panel2);border-radius:.5rem;padding:.7rem .95rem;margin:.5rem 0 1rem;}
+  .lead b{color:#0b3d78;}
+  .promptbox{border-left:3px solid var(--accent);background:#ddf4ff55;padding:.7rem 1rem;border-radius:.4rem;margin:.9rem 0;}
+  .promptbox .label{font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);font-weight:700;}
+  .callout{border-radius:.5rem;padding:.75rem 1rem;margin:.9rem 0;font-size:.95rem;}
+  .callout.warn{background:var(--amber-bg);border:1px solid var(--amber-bd);color:var(--amber-tx);}
+  .callout.coach{background:var(--coach-bg);border:1px solid var(--coach-bd);color:var(--coach-tx);}
+  .callout.check{background:#e6f4ea;border:1px solid #9bd5ac;color:#0f5323;}
+  .callout.say{background:var(--say-bg);border:1px solid var(--say-bd);color:var(--say-tx);}
+  .callout .h{font-weight:700;display:block;margin-bottom:.2rem;}
+  .qa{border-left:3px solid var(--border);padding:.2rem 0 .2rem 1rem;margin:.6rem 0;}
+  .qa .q{font-weight:600;}
+  .qa .a{color:var(--muted);}
+  .footernav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;border-top:1px solid var(--border);padding-top:20px;}
+  .donebar{display:flex;align-items:center;gap:12px;margin-top:26px;padding:14px 16px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);}
+  .donebar .status{font-size:14px;color:var(--muted);}
+  .kicker{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);}
+</style>
+</head>
+<body>
+<header>
+  <div class="row">
+    <div>
+      <h1>Coach Teaching Guide 🧑‍🏫 — Building a Teacher-Info App with Claude</h1>
+      <p class="sub">A live teaching script for coaching over Teams — the what, why & how of each step, with talking points. Tick sections as you cover them.</p>
+    </div>
+    <div class="progresswrap">
+      <div class="progressbar"><span id="pbar"></span></div>
+      <span class="progresspct" id="ppct">0%</span>
+      <button class="btn" id="resetBtn" title="Clear all progress">Reset</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <nav id="nav"></nav>
+  <main>
+    <div class="content" id="content"></div>
+    <div class="donebar">
+      <button class="btn primary" id="doneBtn">Mark this section done</button>
+      <span class="status" id="doneStatus"></span>
+    </div>
+    <div class="footernav">
+      <button class="btn" id="prevBtn">← Previous</button>
+      <button class="btn" id="nextBtn">Next →</button>
+    </div>
+  </main>
+</div>
+
+<script>
+const MODULES = [
+  {
+    id:"how-to-teach",
+    title:"How to use this guide (read first)",
+    html:`
+      <span class="kicker">For the coach</span>
+      <h2>How to teach this over Teams</h2>
+      <p class="lead">This guide is your <b>teaching script</b>. Each section gives you the
+      <b>What</b>, <b>Why</b> and <b>How</b> so you can explain confidently — plus 🗣️ talking points to
+      say out loud, and ❓ questions interns commonly ask.</p>
+      <h3>How each section is laid out</h3>
+      <ul>
+        <li><b>What it is</b> — the plain explanation to give.</li>
+        <li><b>Why it matters</b> — the motivation (interns learn better when they know <em>why</em>).</li>
+        <li><b>How to do it</b> — the exact steps/prompts.</li>
+        <li><span class="callout say" style="display:inline;padding:2px 8px">🗣️ Say to the intern</span> — a talking point you can read aloud.</li>
+        <li><span class="callout coach" style="display:inline;padding:2px 8px">👩‍🏫 Coach note</span> — facilitation tips just for you.</li>
+      </ul>
+      <h3>Running the session on Teams</h3>
+      <ul>
+        <li><b>Share your screen and do it live</b> — build the same app yourself as you narrate. Seeing it happen beats slides.</li>
+        <li><b>Have interns follow along</b> on their own machine, one step behind you. Pause at each ✅ checkpoint and ask "is everyone seeing this?"</li>
+        <li><b>Teach the loop, not the keystrokes</b> — the goal is that they can direct Claude, not memorise commands.</li>
+        <li><b>Record the session</b> so interns can rewatch tricky parts (installs, Microsoft setup).</li>
+        <li><b>Park the stragglers</b> — if one person is stuck, note it and help after, so the group keeps moving.</li>
+      </ul>
+      <div class="callout coach"><span class="h">👩‍🏫 Pacing</span>
+      This is roughly 3 short sessions: (1) setup + version control + tech + create project, (2) build the
+      form + Microsoft integration, (3) test + deploy + capstone. Don't cram it into one call.</div>
+    `
+  },
+  {
+    id:"orientation",
+    title:"1 · Orientation — the big idea",
+    html:`
+      <h2>Orientation — the big idea</h2>
+      <p class="lead"><b>What they'll build:</b> a real web app where a teacher signs in with Microsoft,
+      fills in a form, and each submission lands as a row in an Excel sheet on OneDrive — built
+      <b>without the intern writing any code.</b></p>
+      <h3>The one idea to land first</h3>
+      <p><b>What:</b> They are not learning to write code. They're learning to <b>direct Claude</b> to write
+      it. Their real skill is describing what they want clearly and steering the result.</p>
+      <p><b>Why it matters:</b> If interns think "I can't code, so I can't do this," they'll freeze. Reframe it:
+      "You're the director; Claude is the builder." That mindset is the whole course.</p>
+      <p><b>How they'll work — the four-step loop:</b></p>
+      <ol>
+        <li><b>Describe</b> what you want.</li>
+        <li>Let Claude <b>build</b> it.</li>
+        <li><b>Run</b> it.</li>
+        <li>If it breaks, <b>paste the error back</b> to Claude.</li>
+      </ol>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "You don't need to understand every line. Your job is to explain clearly, run what Claude gives you,
+      and tell it what happened. Errors are normal — pasting them back is how we make progress."</div>
+      <h3>The journey (show them the map)</h3>
+      <p>Set up tools → put the project under version control → choose the tech → create the React project →
+      build the app with prompts → connect Microsoft sign-in and save data → test → publish on Vercel.</p>
+      <div class="callout warn"><span class="h">🟡 Golden rule to repeat all course</span>
+      Stuck or confused for more than a few minutes → stop and ask the coach. Don't guess.</div>
+    `
+  },
+  {
+    id:"accounts",
+    title:"2 · Accounts you'll need",
+    html:`
+      <h2>Accounts you'll need</h2>
+      <p class="lead"><b>What:</b> four free accounts. <b>Why:</b> each plays one clear role — worth naming so
+      interns aren't confused later about "which login is this?"</p>
+      <table>
+        <tr><th>Account</th><th>What it's for (say this)</th></tr>
+        <tr><td><b>Claude</b></td><td>The assistant that writes your code.</td></tr>
+        <tr><td><b>GitHub</b></td><td>The online home + backup of your code — and what publishes it later.</td></tr>
+        <tr><td><b>Microsoft 365</b> (work)</td><td>Signs the teacher in, and where the Excel data is saved.</td></tr>
+        <tr><td><b>Vercel</b> (later)</td><td>Puts the finished app on the internet. You'll sign up with GitHub.</td></tr>
+      </table>
+      <div class="callout coach"><span class="h">👩‍🏫 Coach note</span>
+      Confirm before the session that interns can sign in to Claude and GitHub and that their M365 account
+      works. Also check whether they can register an app in Entra ID — if not, plan to help at Parts 12 & 14.</div>
+    `
+  },
+  {
+    id:"install",
+    title:"3 · Install the tools",
+    html:`
+      <h2>Install the tools (~20 min)</h2>
+      <p class="lead"><b>What:</b> three programs. <b>Why:</b> together they let the intern build and run a
+      real app on their own machine, with Claude helping inside.</p>
+      <h3>1) VS Code — <span style="font-weight:400">what & why</span></h3>
+      <p><b>What:</b> the workspace where the project's files live and where you run things. <b>Why:</b> it's
+      where Claude will live too, so everything is in one window. <b>How:</b> code.visualstudio.com → install.</p>
+      <h3>2) Node.js — <span style="font-weight:400">what & why</span></h3>
+      <p><b>What:</b> the engine that runs the app on your computer. <b>Why:</b> React's tools need it (you'll
+      explain this more in "Choosing your tech"). <b>How:</b> nodejs.org → the big <b>LTS</b> button → install.</p>
+      <div class="callout check"><span class="h">✅ Checkpoint (do this live)</span>
+      VS Code menu <b>Terminal → New Terminal</b>, type <code>node --version</code>. Seeing <code>v20.x.x</code>
+      proves Node is installed. "not recognised" → close &amp; reopen VS Code.</div>
+      <h3>3) Claude Code extension — <span style="font-weight:400">what & why</span></h3>
+      <p><b>What:</b> Claude living inside VS Code, able to create files and run commands. <b>Why:</b> this is
+      what makes "build with prompts only" possible — Claude does the typing. <b>How:</b> Extensions icon →
+      search "Claude Code" → Install (Anthropic) → open the Claude panel → sign in.</p>
+      <div class="callout coach"><span class="h">👩‍🏫 Coach note</span>
+      Installs are where non-technical people stall. Do them live, screen-shared, and wait for every intern's
+      ✅ before moving on. Common snag: Node "not recognised" until VS Code is restarted.</div>
+    `
+  },
+  {
+    id:"working-with-claude",
+    title:"4 · Working with Claude",
+    html:`
+      <h2>Working with Claude (the core skill)</h2>
+      <p class="lead"><b>What:</b> how to talk to Claude so it produces good work. <b>Why:</b> this is the
+      single most transferable skill in the whole course — spend real time here.</p>
+      <h3>How it works in VS Code</h3>
+      <ul>
+        <li>Type into the <b>Claude panel</b>; Claude replies and <b>creates/edits files</b> (approve its prompts).</li>
+        <li>Claude <b>runs commands in the bottom terminal</b> — the intern doesn't type them.</li>
+        <li>Red error? Copy it, paste to Claude, ask how to fix it.</li>
+      </ul>
+      <h3>Five habits — teach each with the "why"</h3>
+      <table>
+        <tr><th>Habit</th><th>Why it works</th></tr>
+        <tr><td><b>Give context</b> ("I'm a beginner building X")</td><td>Claude tailors depth and tone to them.</td></tr>
+        <tr><td><b>One thing at a time</b></td><td>Small changes are easy to check and undo; big vague asks get messy.</td></tr>
+        <tr><td><b>Ask it to explain</b></td><td>Builds understanding and catches misunderstandings early.</td></tr>
+        <tr><td><b>Ask for a plan before big changes</b></td><td>You approve the approach before any code changes.</td></tr>
+        <tr><td><b>You're the boss</b></td><td>Interns should question odd output, not rubber-stamp it.</td></tr>
+      </table>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "A vague prompt gets a vague result. Tell Claude who you are, what you want, and what to do next —
+      then check what it did."</div>
+      <div class="qa"><span class="q">❓ "What if Claude does something I didn't ask for?"</span>
+      <span class="a">Tell it: 'that's not what I wanted — undo that and do X instead.' You're always in control.</span></div>
+      <div class="callout coach"><span class="h">👩‍🏫 Coach note</span>
+      Demonstrate a bad prompt vs a good prompt live and show the difference in output. It lands instantly.</div>
+    `
+  },
+  {
+    id:"claude-essentials",
+    title:"Claude essentials: context, CLAUDE.md & skills",
+    html:`
+      <h2>Claude essentials: context, CLAUDE.md & skills</h2>
+      <p class="lead"><b>Why this is the most important module:</b> the whole course is "direct Claude well."
+      These few ideas separate someone who fights Claude from someone who flies with it. Teach them slowly.</p>
+
+      <h3>1) Context — what Claude can "see"</h3>
+      <p><b>What:</b> Claude works from its <b>context</b> — the current conversation plus the files it's been
+      shown. It doesn't magically know your whole computer; it knows what's in front of it right now.</p>
+      <p><b>Why it matters:</b> if something important isn't in the context, Claude can't use it. And if a chat
+      runs very long, older details get crowded out or summarised. Good results come from the <em>right</em>
+      context, not the most.</p>
+      <p><b>How to manage it:</b></p>
+      <ul>
+        <li>Point Claude at the relevant file(s) when you ask about them.</li>
+        <li>Start a <b>fresh chat</b> for a new, unrelated task (<code>/clear</code>) so old context doesn't confuse it.</li>
+        <li>Re-state key facts if the conversation has gone long.</li>
+      </ul>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "Claude only knows what's in the conversation right now. If it seems to 'forget', remind it — or start a
+      fresh chat for a new task."</div>
+      <div class="qa"><span class="q">❓ "Does Claude remember everything from yesterday?"</span>
+      <span class="a">Not automatically. For things it should <em>always</em> know about your project, we use a CLAUDE.md file — next.</span></div>
+
+      <h3>2) CLAUDE.md — your project's memory</h3>
+      <p><b>What:</b> a plain file named <code>CLAUDE.md</code> in your project that Claude Code <b>reads
+      automatically every time it starts.</b> It's where you write what Claude should always know: what the
+      project is, how to run and test it, conventions, and any "always do / never do" rules.</p>
+      <p><b>Why:</b> so you don't re-explain your project every session. It's <em>persistent</em> context —
+      write it once, Claude honours it every time.</p>
+      <p><b>How:</b> run <code>/init</code> in Claude Code to generate a starter one, or ask
+      <em>"create a CLAUDE.md describing this project and how to run it."</em> Update it as the project grows.</p>
+      <p><b>What ours might say:</b> "React + Vite app that collects teacher info and saves it to Excel via
+      Microsoft Graph. Run with <code>npm run dev</code>, test with <code>npm test</code>. Keep the UI simple.
+      Never commit secrets."</p>
+      <div class="callout say"><span class="h">🗣️ Analogy to say</span>
+      "CLAUDE.md is an onboarding note Claude reads before every shift — put the project's ground rules there
+      once, and you never repeat them."</div>
+
+      <h3>3) Skills — reusable know-how</h3>
+      <p><b>What:</b> a <b>Skill</b> is a saved packet of instructions/steps Claude pulls in <em>when it's
+      relevant</em>. Where CLAUDE.md is <em>always</em> loaded, a skill loads <em>on demand</em> for a specific
+      kind of task.</p>
+      <table>
+        <tr><th></th><th>CLAUDE.md</th><th>Skill</th></tr>
+        <tr><td><b>Loaded</b></td><td>Always (project context)</td><td>When relevant / when invoked</td></tr>
+        <tr><td><b>Scope</b></td><td>This project's ground rules</td><td>A specific repeatable task or know-how</td></tr>
+        <tr><td><b>Good for</b></td><td>"How this project works"</td><td>"How we do X, step by step"</td></tr>
+      </table>
+      <p><b>When to CREATE a new skill:</b> you notice you're giving the <em>same multi-step instructions</em>
+      again and again — e.g. "how we add a new form field end to end", "our deployment checklist", "our house
+      style for forms". Capture it once as a skill.</p>
+      <p><b>When to USE an existing skill:</b> when your task matches a skill you (or your team) already made —
+      don't rebuild it. Check what skills exist before writing fresh instructions.</p>
+      <p><b>How:</b> ask Claude — <em>"help me turn these repeated steps into a Claude Code skill, and tell me
+      where it's saved."</em> It creates a small <code>SKILL.md</code> with a name and a description of when to use it.</p>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "If you've explained the same thing three times, make it a skill. If a skill already covers your task, use
+      it — don't reinvent it."</div>
+      <div class="qa"><span class="q">❓ "Skill or CLAUDE.md — which do I use?"</span>
+      <span class="a">Always-true project facts → CLAUDE.md. A specific repeatable procedure you trigger
+      sometimes → a skill.</span></div>
+
+      <h3>4) A few more concepts that pay off</h3>
+      <ul>
+        <li><b>Plan before big changes</b> — "show me your plan first"; you approve the approach before any code changes.</li>
+        <li><b>Be specific and iterative</b> — small, clear asks beat one giant vague one.</li>
+        <li><b>Review what changed</b> — Claude shows its edits; skim them and ask it to explain anything unclear.</li>
+        <li><b>Start fresh for new tasks</b> — a new topic → new chat (<code>/clear</code>) keeps context clean.</li>
+        <li><b>Save often (Git)</b> — commit after each working step so you can always rewind.</li>
+      </ul>
+      <div class="callout coach"><span class="h">👩‍🏫 Coach note</span>
+      This is the highest-leverage, least-obvious module. Most intern frustration ("Claude forgot / did
+      something weird") traces back to <em>context</em>. Demonstrate <code>/init</code> and a real CLAUDE.md
+      live, and show starting a fresh chat with <code>/clear</code>.</div>
+    `
+  },
+  {
+    id:"version-control",
+    title:"5 · Version control (Git & GitHub)",
+    html:`
+      <h2>Version control (Git & GitHub)</h2>
+      <p class="lead"><b>What:</b> a system of "save points" for your whole project. <b>Why:</b> so a bad
+      change is never a disaster — you rewind. We set it up <b>first</b> so everything from here is saved, and
+      because it's what publishing (Vercel) uses later.</p>
+      <h3>Git vs GitHub — explain the difference clearly</h3>
+      <ul>
+        <li><b>Git</b> = save points <em>on your computer</em>. Rewind to any version that worked.</li>
+        <li><b>GitHub</b> = the <em>online</em> copy of those save points — a backup, a way to share, and what Vercel deploys from.</li>
+      </ul>
+      <div class="callout say"><span class="h">🗣️ Analogy to say</span>
+      "Git is like saving a document with full history — you can open any past version. GitHub is keeping that
+      document in the cloud so it's backed up and shareable."</div>
+      <h3>How: create the repo & link it</h3>
+      <ol>
+        <li>github.com → <b>New</b> → name <code>teacher-form</code> → <b>Private</b> → Create. Copy the URL.</li>
+        <li>In VS Code, open the project folder, then have Claude connect it:</li>
+      </ol>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "Set up Git in this project and connect it to my GitHub repository at PASTE-URL. I'm a beginner — do the
+      steps and tell me if I need to sign in to GitHub. We'll make the first real commit after we create the app."</div>
+      <h3>The Git commands — what Claude runs, and what they mean</h3>
+      <p>Interns won't type these, but teach what they mean so it's not magic. The everyday flow is
+      <b>add → commit → push</b>.</p>
+      <table>
+        <tr><th>Command</th><th>What it does</th><th>Analogy</th></tr>
+        <tr><td><code>git init</code></td><td>Start tracking this project (once)</td><td>Open a fresh logbook</td></tr>
+        <tr><td><code>git status</code></td><td>Show what changed since the last save</td><td>Check what's new on your desk</td></tr>
+        <tr><td><code>git add .</code></td><td><b>Stage</b> changes for the next save</td><td>Put items into a box</td></tr>
+        <tr><td><code>git commit -m "msg"</code></td><td><b>Save</b> a snapshot with a label</td><td>Seal &amp; label the box</td></tr>
+        <tr><td><code>git push</code></td><td>Upload commits to GitHub</td><td>Ship the box to the warehouse</td></tr>
+        <tr><td><code>git pull</code></td><td>Download changes from GitHub</td><td>Collect boxes from the warehouse</td></tr>
+        <tr><td><code>git log</code></td><td>List past commits (history)</td><td>Flip through the logbook</td></tr>
+        <tr><td><code>git remote add origin &lt;url&gt;</code></td><td>Link the project to the GitHub repo (once)</td><td>Note the warehouse address</td></tr>
+        <tr><td><code>git revert</code> / <code>git checkout</code></td><td>Go back to an earlier state</td><td>Re-open an older box</td></tr>
+      </table>
+      <p><b>So "save my work" = <code>git add</code></b> (box up) → <b><code>git commit</code></b> (seal + label)
+      → <b><code>git push</code></b> (send to GitHub).</p>
+      <div class="callout say"><span class="h">🗣️ Habit to instil</span>
+      "After anything works, say to Claude: 'commit and push my progress with a clear message.' To undo a mess:
+      'take me back to the last working commit.'"</div>
+      <div class="qa"><span class="q">❓ "Why bother if Claude can just rebuild it?"</span>
+      <span class="a">Because a broken change can be hard to describe back. A save point is an instant, reliable rewind.</span></div>
+      <div class="callout coach"><span class="h">👩‍🏫 Coach note</span>
+      Ensure interns can create repos and authenticate (browser/device-code). Pre-creating repos avoids
+      first-session friction.</div>
+    `
+  },
+  {
+    id:"choosing-tech",
+    title:"6 · Choosing the tech",
+    html:`
+      <h2>Choosing the tech: HTML/CSS vs React + Tailwind</h2>
+      <p class="lead"><b>What:</b> deciding how to build the app. <b>Why teach it:</b> interns should learn to
+      <em>choose</em> tools for a job, not just follow orders — and understand the words they'll keep hearing.</p>
+      <h3>The two options</h3>
+      <table>
+        <tr><th>Plain HTML / CSS (+ a little JS)</th><th>React + Tailwind</th></tr>
+        <tr><td>Simple, <em>static</em> pages — a flyer, a one-page site. No tools; just open the file.</td>
+            <td>Interactive <em>apps</em> — forms, changing data, sign-in, reusable pieces. Needs Node &amp; npm.</td></tr>
+      </table>
+      <p><b>How to decide:</b> static &amp; simple → HTML/CSS. Interactive, handles data, has sign-in, will grow
+      → React. <b>Our app</b> has a form + Microsoft sign-in + saving data → <b>React + Tailwind</b>.</p>
+      <h3>The pieces — what each is and why we need it</h3>
+      <table>
+        <tr><th>Piece</th><th>What</th><th>Why we need it</th></tr>
+        <tr><td><b>React</b></td><td>A toolkit for interactive interfaces made of reusable "components".</td><td>Our app reacts to input, sign-in, submits — that's what React is for.</td></tr>
+        <tr><td><b>Node.js</b></td><td>Runs JavaScript tools on your computer.</td><td>React's build tools + the local preview run on Node.</td></tr>
+        <tr><td><b>npm</b></td><td>The "app store" for code libraries; comes with Node.</td><td>It installs the pieces (dependencies) our app uses.</td></tr>
+        <tr><td><b>Tailwind</b></td><td>A styling toolkit — style via small class names.</td><td>Gives a clean, modern look fast without separate design files.</td></tr>
+      </table>
+      <div class="callout say"><span class="h">🗣️ Analogy to say</span>
+      "HTML/CSS is a printed poster. React is an interactive kiosk. Node and npm are the workshop and the
+      parts catalogue that let us build the kiosk."</div>
+      <div class="qa"><span class="q">❓ "Why not just use plain HTML — isn't it simpler?"</span>
+      <span class="a">For a static page, yes. But once you need sign-in, live validation, and saving data, plain
+      HTML gets painful fast — React is built for exactly that.</span></div>
+      <div class="callout coach"><span class="h">👩‍🏫 Coach note</span>
+      Don't over-debate — the point is they understand <em>why</em> React was chosen. Note it's not a one-way
+      door; tech can change later.</div>
+    `
+  },
+  {
+    id:"create-project",
+    title:"7 · Create the React project",
+    html:`
+      <h2>Create the React project (Node, npm & dependencies)</h2>
+      <p class="lead"><b>What:</b> generate the empty React app to build on. <b>Why:</b> you need a running
+      foundation before adding features — and it's the perfect moment to explain dependencies.</p>
+      <h3>How: scaffold it with a prompt</h3>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "Inside this folder, create a React app using Vite (this installs React for me). Install everything, then
+      start it and give me the web address to open. Keep it simple, one step at a time."</div>
+      <div class="callout check"><span class="h">✅ Checkpoint</span>
+      App files appear; open the <code>http://localhost:5173</code> link → a starter page runs. 🎉
+      (Ctrl+C stops it; "start the app again" restarts.)</div>
+      <h3>Teach what just happened (the key concepts)</h3>
+      <ul>
+        <li><b>Scaffolding</b> = creating the empty starter project. <b>Vite</b> is the tool that does it and
+        <b>installs React</b> for you — so "install React" and "create the app" are the same moment here.</li>
+        <li><b>Dependency</b> = a library your app uses. React is now a dependency.</li>
+        <li><b><code>package.json</code></b> = the project's "ingredients list + shortcuts" — it lists
+        dependencies and commands like <code>npm run dev</code>.</li>
+        <li><b><code>node_modules/</code></b> = where the downloaded libraries physically live;
+        <code>npm install</code> fetched them.</li>
+      </ul>
+      <h3>How: add your first extra dependency (Tailwind)</h3>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "Add Tailwind CSS to this Vite React project and set it up, then give the page a clean, simple look."</div>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "Adding a dependency just means npm downloads a library and lists it in package.json. You'll do this again
+      later for Microsoft sign-in — exact same idea."</div>
+      <div class="promptbox"><div class="label">Save your work</div>
+      "Commit and push my progress to GitHub with the message 'set up React + Tailwind'."</div>
+      <div class="qa"><span class="q">❓ "What's in node_modules — do I need to understand it?"</span>
+      <span class="a">No. It's just the downloaded library code. Never edit it; it can always be rebuilt from package.json.</span></div>
+    `
+  },
+  {
+    id:"spec-and-errors",
+    title:"8 · Specs & handling errors",
+    html:`
+      <h2>Specs & handling errors</h2>
+      <p class="lead"><b>Why together:</b> a good spec prevents many errors, and calm error-handling fixes the
+      rest. These two habits make interns self-sufficient.</p>
+      <h3>Write a specification first</h3>
+      <p><b>What:</b> a short plain-English description of what you want, before building. <b>Why:</b> the
+      clearer the ask, the better Claude's output — vague in, vague out. <b>How:</b> answer five questions —
+      what it's for, who uses it &amp; how, what info it captures, the rules, what success looks like.</p>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "Here's my rough idea: [paste your five answers]. Turn this into a clear, short specification and ask me
+      about anything unclear before we build."</div>
+      <h3>Link the spec to your tests</h3>
+      <p><b>The key idea to teach:</b> the spec <em>defines what "correct" means</em> — so your test cases come
+      straight from it. <b>Each rule in the spec becomes a test case.</b> (You'll write the actual tests later,
+      but this is where they come from.)</p>
+      <table>
+        <tr><th>Spec rule</th><th>Becomes this test case</th></tr>
+        <tr><td>Email is required</td><td>Submitting with an empty email shows an error</td></tr>
+        <tr><td>Email must be valid</td><td>"abc" is rejected; "a@b.com" is accepted</td></tr>
+        <tr><td>All fields are needed</td><td>Submitting an empty form is blocked</td></tr>
+        <tr><td>Success = "Thank you, saved!" + a row in Excel</td><td>A valid submission shows the thank-you message</td></tr>
+      </table>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "Write the spec first, and testing becomes easy — you just turn each rule into a check. And here's a tip:
+      if you can't write a test for a rule, the rule probably isn't clear enough yet."</div>
+      <h3>When something breaks</h3>
+      <p><b>What:</b> errors are normal messages telling you something's off. <b>Why teach a process:</b> panic
+      and random changes make things worse; a calm loop fixes things.</p>
+      <ol>
+        <li>Don't panic; don't randomly change things.</li>
+        <li>Read the last few lines.</li>
+        <li>Copy the whole error to Claude with context (what you did, what you expected).</li>
+        <li>Try the fix; a new error usually means progress — repeat.</li>
+        <li>Undo anytime: "undo your last change" or rewind to the last commit.</li>
+      </ol>
+      <div class="callout warn"><span class="h">Do NOT</span>Delete files to "clean up", ignore errors, or paste
+      passwords/secrets. (Client ID is fine; passwords &amp; client secrets are not.)</div>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "An error isn't failure — it's information. Copy the whole thing and let Claude read it. Nine times out of
+      ten that's the fix."</div>
+      <div class="callout coach"><span class="h">👩‍🏫 Coach note</span>
+      Escalation trigger: stop after 2–3 tries over ~15 min, or immediately for Microsoft sign-in/permission errors.</div>
+    `
+  },
+  {
+    id:"form",
+    title:"9 · Build the teacher form",
+    html:`
+      <h2>Build the teacher form</h2>
+      <p class="lead"><b>What:</b> the first real feature. <b>Why it's a great teaching moment:</b> the intern
+      describes something in words and watches Claude turn it into a working screen — the "aha" of the course.</p>
+      <h3>How: describe it, let Claude build it</h3>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "Replace the starter page with a clean, simple form titled 'Teacher Information'. Collect: Full name,
+      Email, Subject taught, Years of experience. Make Email required and validated. Add a Submit button. For
+      now, when I submit, just show the details on screen — we'll save to Excel later."</div>
+      <div class="callout check"><span class="h">✅ Checkpoint</span>
+      Refresh the browser — the form appears; filling &amp; submitting shows the details. Then commit &amp; push.</div>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "Notice what happened: you described fields in plain English and got a working, validated form. Want a
+      Department dropdown? Just ask — then refresh."</div>
+      <div class="callout coach"><span class="h">👩‍🏫 Coach note</span>
+      Have each intern change one thing themselves (add/rename a field) to prove they can drive it, not just watch.</div>
+    `
+  },
+  {
+    id:"data-safety",
+    title:"10 · Handling real data safely",
+    html:`
+      <h2>Handling real data safely</h2>
+      <p class="lead"><b>Why now:</b> from here the app touches real accounts and real teacher information —
+      set the ground rules before any real data is collected.</p>
+      <h3>The rules — what & why</h3>
+      <ul>
+        <li><b>Never share secrets.</b> Client ID is fine; passwords, "client secrets", and <code>.env</code>
+        contents must never be pasted anywhere public. <em>Why: a leaked secret lets someone impersonate the app.</em></li>
+        <li><b>Keep secrets out of what's published.</b> They live in <code>.env</code>; <code>.gitignore</code>
+        keeps that out of GitHub. <em>Why: pushing a secret to GitHub exposes it.</em></li>
+        <li><b>Collect only what you need.</b> <em>Why: every field is personal data you're now responsible for.</em></li>
+        <li><b>Treat submissions as confidential</b> — they're real people.</li>
+        <li><b>If a secret leaks, tell the coach immediately</b> — it can be rotated.</li>
+      </ul>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "Rule of thumb: the Client ID is like a shop's name — public. A client secret or password is like the
+      shop's keys — never hand them out."</div>
+      <div class="callout coach"><span class="h">👩‍🏫 Coach note</span>
+      If your org has GDPR/data-handling policies, brief interns here before real submissions are collected.</div>
+    `
+  },
+  {
+    id:"ms-concepts",
+    title:"11 · Understand the Microsoft pieces",
+    html:`
+      <h2>Understand the Microsoft pieces</h2>
+      <p class="lead"><b>Why spend time here:</b> this is where interns get lost. If they understand the
+      concepts first, the clicking in the next parts makes sense instead of feeling random.</p>
+      <p><b>The goal:</b> the app must (1) know who the teacher is (sign-in) and (2) be allowed to save to their
+      files. Microsoft won't let a random app do either without an introduction and permission.</p>
+      <h3>Microsoft Graph API</h3>
+      <p><b>What:</b> one doorway to Microsoft 365 data — mail, Teams, OneDrive, Excel. <b>Why:</b> our app adds
+      a row to Excel by asking Graph. <b>Analogy:</b> Graph is the <b>reception desk</b> for all M365 data — you
+      make a request and it does it, if you're allowed.</p>
+      <h3>Entra app registration</h3>
+      <p><b>What:</b> registering the app so Microsoft knows and trusts it. <b>Why:</b> without it, every
+      sign-in is rejected. <b>Analogy:</b> a contractor signs in at security and gets a <b>visitor badge</b>.</p>
+      <h3>Tenant ID vs Client ID</h3>
+      <table>
+        <tr><th>ID</th><th>What it identifies</th><th>Analogy</th></tr>
+        <tr><td><b>Tenant ID</b></td><td>Your <em>organisation</em> (whose users/data)</td><td>The building</td></tr>
+        <tr><td><b>Client ID</b> (App ID)</td><td>Your <em>app</em> (which app is this)</td><td>The badge number</td></tr>
+      </table>
+      <p>A <b>client secret</b> is a password for <em>server</em> apps — a browser app usually needs none.</p>
+      <h3>Permissions & the access token</h3>
+      <p><b>Permissions/scopes</b> (e.g. <code>Files.ReadWrite</code>): what the app is <em>allowed</em> to do —
+      must be consented to. <b>Access token:</b> a short-lived pass Microsoft gives the app after sign-in,
+      proving the user is signed in and the app is allowed; shown to Graph on every request.</p>
+      <pre><code>1. Register app in Entra ID -> Tenant ID + Client ID   (Register step)
+2. App uses the IDs to start sign-in                   (Sign-in step)
+3. Teacher signs in at Microsoft
+4. Microsoft returns an access token
+5. Permission (Files.ReadWrite) is consented           (Permissions step)
+6. App calls Graph WITH the token -> row into Excel    (Save-data step)</code></pre>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "Think of a secure office: the app registration is the visitor badge, sign-in proves who you are, the
+      access token is a day-pass, permissions say which rooms you can enter, and Graph is the front desk that
+      actually does things for you."</div>
+      <div class="qa"><span class="q">❓ "Why so many steps just to save a row?"</span>
+      <span class="a">Because it's real company data. Microsoft makes apps prove who they are and what they're
+      allowed to do — that protects everyone's files.</span></div>
+      <div class="callout coach"><span class="h">👩‍🏫 Coach note</span>
+      Teach this <em>before</em> the clicking. When sign-in or saving fails later, point back to which link in
+      the 6-step chain broke.</div>
+    `
+  },
+  {
+    id:"register",
+    title:"12 · Register the app (Microsoft)",
+    html:`
+      <h2>Register the app with Microsoft</h2>
+      <p class="lead"><b>What:</b> create the app's "visitor badge" in Entra ID and copy its IDs. <b>Why:</b>
+      nothing else Microsoft-related works until the app is registered.</p>
+      <h3>How (Claude guides the clicks)</h3>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "Walk me through registering a new app in Microsoft Entra ID, step by step, as a complete beginner:
+      choose 'Single-page application', set the redirect address to http://localhost:5173, then find and copy
+      the 'Application (client) ID'. Tell me exactly what to click."</div>
+      <div class="callout check"><span class="h">✅ Checkpoint</span>
+      You have the <b>Client ID</b> copied (and noted the <b>Tenant ID</b>).</div>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "'Single-page application' just means an app that runs in the browser — that's ours. The redirect address
+      is where Microsoft sends you back after sign-in; right now that's your local app."</div>
+      <div class="callout warn"><span class="h">🟡 Stop if…</span>Microsoft says you can't register an app —
+      that needs an admin. Expected in some orgs; the coach steps in here.</div>
+    `
+  },
+  {
+    id:"signin",
+    title:"13 · Add Microsoft sign-in",
+    html:`
+      <h2>Add Microsoft sign-in (a new dependency)</h2>
+      <p class="lead"><b>What:</b> add a "Sign in with Microsoft" button. <b>Why point it out:</b> it's the
+      "add a dependency" pattern again — reinforce that concept.</p>
+      <p><b>What is MSAL:</b> Microsoft's official sign-in library. Adding it is another dependency —
+      <code>npm</code> installs <code>@azure/msal-react</code> and it appears in <code>package.json</code>,
+      exactly like Tailwind.</p>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "Add 'Sign in with Microsoft' using @azure/msal-react. My Client ID is PASTE and Tenant ID is PASTE. Add
+      Sign in / Sign out buttons, and only show the Teacher Information form after sign-in. Tell me if I need to
+      restart the app."</div>
+      <div class="callout check"><span class="h">✅ Checkpoint</span>
+      Refresh → a "Sign in with Microsoft" button appears; signing in with a work account shows the form. Commit &amp; push.</div>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "This is the same move as adding Tailwind — we add a library, and now the app can sign people in. That's
+      the power of dependencies: someone else built the hard part."</div>
+    `
+  },
+  {
+    id:"permissions",
+    title:"14 · Grant Graph permissions",
+    html:`
+      <h2>Allow the app to save files (Graph permission)</h2>
+      <p class="lead"><b>What:</b> give the app the <code>Files.ReadWrite</code> permission and consent to it.
+      <b>Why:</b> being <em>known</em> (registered) isn't the same as being <em>allowed</em> — this is the
+      "allowed" step.</p>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "In Microsoft Entra ID, walk me through adding the Microsoft Graph permission Files.ReadWrite (delegated)
+      to my app registration, and how to grant consent. Step by step, beginner-friendly."</div>
+      <div class="callout check"><span class="h">✅ Checkpoint</span>The permission shows a green tick (granted).</div>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "'Delegated' means the app acts <em>as the signed-in user</em> — it can only touch what that person could
+      touch anyway. 'Consent' is just someone agreeing to give the app that ability."</div>
+      <div class="callout warn"><span class="h">🟡 Stop if…</span>"admin consent required" appears — only an
+      admin can approve. That's the coach/IT step.</div>
+    `
+  },
+  {
+    id:"excel",
+    title:"15 · Prepare the Excel sheet",
+    html:`
+      <h2>Prepare the Excel sheet</h2>
+      <p class="lead"><b>What:</b> make the Excel file + table the app will write into. <b>Why first:</b> Graph
+      writes rows into an <em>existing table</em> — not a blank sheet — so it must exist beforehand.</p>
+      <h3>How</h3>
+      <ol>
+        <li>office.com → Excel → new blank workbook.</li>
+        <li>Row 1 headings A–D: <code>Name</code> <code>Email</code> <code>Subject</code> <code>Experience</code>.</li>
+        <li>Select headings + a few empty rows → <b>Insert → Table</b> (tick "My table has headers").</li>
+        <li>Name the file <b>TeacherData</b> (auto-saves to OneDrive).</li>
+      </ol>
+      <div class="callout check"><span class="h">✅ Checkpoint</span>An Excel file on OneDrive with a table that has those four headings.</div>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "A 'table' in Excel is a named block with headers — that's the target Graph can add rows to. A plain sheet
+      isn't enough."</div>
+    `
+  },
+  {
+    id:"save-data",
+    title:"16 · Save form data to Excel",
+    html:`
+      <h2>Save form answers into Excel</h2>
+      <p class="lead"><b>What:</b> connect the form's Submit to Graph so it writes a row. <b>Why it's the
+      payoff:</b> this is where sign-in, token, permission and Graph all come together.</p>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "When the Teacher Information form is submitted, use the signed-in user's Microsoft account to save the
+      answers as a new row in my Excel table via Microsoft Graph. The file is 'TeacherData' in my OneDrive and
+      the columns are Name, Email, Subject, Experience. Show a 'Thank you, saved!' message when it works. Help
+      me find any IDs you need."</div>
+      <p>Claude may ask for the file/table name or ID — it explains how to find them. Then commit &amp; push.</p>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "On submit, the app takes your access token and asks Graph to add a row. Everything from the last few
+      steps is now doing its job at once."</div>
+      <div class="callout check"><span class="h">✅ Checkpoint</span>Tested in the next section.</div>
+    `
+  },
+  {
+    id:"test",
+    title:"17 · Test end-to-end",
+    html:`
+      <h2>Test the whole thing (the big moment)</h2>
+      <p class="lead"><b>What:</b> run the full journey — sign in, submit, check Excel. <b>Why:</b> "it loads"
+      isn't proof; a real end-to-end run is.</p>
+      <h3>How</h3>
+      <ol>
+        <li>Open the app → Sign in with Microsoft.</li>
+        <li>Fill the form → Submit → "Thank you, saved!"</li>
+        <li>Open the TeacherData Excel file on OneDrive.</li>
+      </ol>
+      <div class="callout check"><span class="h">✅ Checkpoint</span>A new row appears with what was typed. The app works! 🎉</div>
+      <p>If not: copy the error to Claude. Common causes — wrong table name, or a step from Register / Sign-in /
+      Permissions.</p>
+      <h3>Teach: what a test case & a unit test are</h3>
+      <p><b>Test case</b> — one specific check: an <em>input</em> plus the <em>result you expect</em>. Example:
+      "Given an empty email, submitting should show an error." It's the <em>idea</em> of what to verify.</p>
+      <p><b>Unit test</b> — a small <em>automated</em> test that checks one "unit" (a small piece) of your app
+      on its own — e.g. the email-validation, or that the form shows an error when email is blank. It runs in
+      code, in a second, with no clicking.</p>
+      <p><b>The purpose of a unit test:</b></p>
+      <ul>
+        <li>Prove a small piece works as intended.</li>
+        <li>Catch mistakes early — before a teacher hits them.</li>
+        <li>Catch <b>regressions</b> — if a later change breaks it, the test fails immediately.</li>
+        <li>Let you (and Claude) change code with confidence.</li>
+        <li>Document what "correct" means, in a way that's checked automatically.</li>
+      </ul>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "A test case is <em>what should happen</em>. A unit test is a tiny robot that checks it for you every
+      time — so when Claude changes something, you instantly know if it broke."</div>
+      <p><b>Where the tests come from:</b> your <em>spec</em>. Each rule you wrote in the Specs section is one
+      test case — that's your ready-made checklist. Get both a <b>manual test list</b> (things to click through)
+      and <b>automated unit tests</b>:</p>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "Write automated tests using Vitest and React Testing Library: email required, invalid email rejected,
+      valid submission shows the thank-you message. Tell me the command to run them." → run <code>npm test</code>.</div>
+      <div class="callout coach"><span class="h">👩‍🏫 Coach note</span>
+      Introduce "regression": re-run tests after any change to be sure you didn't break what worked.</div>
+    `
+  },
+  {
+    id:"deploy-vercel",
+    title:"18 · Deploy with Vercel",
+    html:`
+      <h2>Deploy with Vercel</h2>
+      <p class="lead"><b>What:</b> put the app on the internet. <b>Why Vercel:</b> it's free, and it connects to
+      GitHub so the app <b>auto-updates whenever you push</b> — no manual uploads.</p>
+      <h3>How</h3>
+      <ol>
+        <li>vercel.com → sign up <b>with your GitHub account</b>.</li>
+        <li><b>Add New… → Project</b> → import your <code>teacher-form</code> repo.</li>
+        <li>Vercel detects Vite/React → <b>Deploy</b>.</li>
+        <li>You get a live web address.</li>
+      </ol>
+      <div class="callout warn"><span class="h">Two must-dos after deploying</span>
+      1) Add the new <b>Vercel URL as a redirect URI</b> in Entra ID (Register step) — or sign-in fails on the
+      live site. 2) If Client ID/Tenant ID are environment variables, add them in <b>Vercel → Project Settings
+      → Environment Variables</b>.</div>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "From now on your workflow is: change → commit → push. Vercel sees the push and redeploys automatically.
+      That's professional-grade, and you're doing it on day one."</div>
+      <div class="qa"><span class="q">❓ "Why did sign-in stop working after publishing?"</span>
+      <span class="a">The live site is a new address. Microsoft only allows addresses you've registered — add
+      the Vercel URL as a redirect URI.</span></div>
+      <div class="callout check"><span class="h">✅ Checkpoint</span>The app opens at the Vercel URL and sign-in + submit work.</div>
+    `
+  },
+  {
+    id:"capstone",
+    title:"19 · Capstone",
+    html:`
+      <h2>Capstone — make it your own</h2>
+      <p class="lead"><b>What:</b> the intern adds one improvement using only prompts, then ships it.
+      <b>Why:</b> it proves they can run the whole loop independently — your real assessment.</p>
+      <p>Ideas: a confirmation screen with the teacher's name, an extra field, or preventing double-submits.
+      Then commit, push, and watch it go live on Vercel.</p>
+      <div class="callout coach"><span class="h">👩‍🏫 Coach note — the graduation bar</span>
+      Assess the <em>process</em>, not just the result: did they spec it, prompt it, test it, and ship it
+      (commit → push → auto-deploy) on their own? That's competence.</div>
+    `
+  },
+  {
+    id:"deeper",
+    title:"20 · Reference — files, skills, habits",
+    html:`
+      <h2>Reference — files, skills & habits</h2>
+      <h3>The important files (what each is)</h3>
+      <table>
+        <tr><th>File</th><th>What it is</th></tr>
+        <tr><td><code>package.json</code></td><td>"Ingredients list + shortcuts": dependencies + commands (<code>npm run dev</code>, <code>npm test</code>).</td></tr>
+        <tr><td><code>node_modules/</code></td><td>The downloaded libraries. Never edit; can be rebuilt.</td></tr>
+        <tr><td><code>src/</code></td><td>The app's real code — the form, the pages.</td></tr>
+        <tr><td><code>.env</code></td><td>Secret settings (e.g. Client ID). Never share/push.</td></tr>
+        <tr><td><code>.gitignore</code></td><td>Files NOT to push to GitHub (like <code>.env</code>, <code>node_modules</code>).</td></tr>
+      </table>
+      <h3>Claude Code Skills — what & when</h3>
+      <p><b>What:</b> instructions you teach Claude once so it follows them automatically. <b>When:</b> you
+      repeat the same instructions, have a multi-step process you do often, or want team consistency.
+      <b>When not:</b> one-offs. Ask Claude to help create one and explain where it's saved.</p>
+      <h3>Good working habits (teach as defaults)</h3>
+      <ul>
+        <li><b>New session:</b> VS Code → Open Folder → teacher-form → Claude panel → "start the app."</li>
+        <li><b>"It runs" ≠ "it's correct"</b> — always check against the spec and tests.</li>
+        <li><b>Commit &amp; push after every working step</b> — backup + deploy trigger.</li>
+        <li><b>Usage limits:</b> if Claude hits a limit, wait for reset; Git keeps work safe.</li>
+      </ul>
+      <h3>Per-feature "done" checklist</h3>
+      <ul>
+        <li>Spec written</li><li>Built &amp; explained by Claude</li><li>Tested (incl. empty/invalid)</li>
+        <li>Matches the spec</li><li>Committed &amp; pushed</li>
+      </ul>
+    `
+  },
+  {
+    id:"troubleshooting",
+    title:"21 · Troubleshooting & glossary",
+    html:`
+      <h2>Troubleshooting &amp; glossary</h2>
+      <h3>Quick help (keep this handy while teaching)</h3>
+      <table>
+        <tr><th>Symptom</th><th>What to do</th></tr>
+        <tr><td>A red error message</td><td>Copy it all → paste to Claude: "how do I fix this?"</td></tr>
+        <tr><td>"not recognised" after a command</td><td>Restart VS Code, retry; else check Node install</td></tr>
+        <tr><td>Microsoft "permission" / "admin consent"</td><td>Stop — needs coach/IT admin</td></tr>
+        <tr><td>Sign-in fails after deploying</td><td>Add the Vercel URL as a redirect URI in Entra ID</td></tr>
+        <tr><td>App page blank</td><td>Tell Claude: "the page is blank, here's the terminal: …"</td></tr>
+        <tr><td>Intern just confused</td><td>Pause, re-explain the concept from its section, then continue</td></tr>
+      </table>
+      <h3>Glossary (plain English)</h3>
+      <table>
+        <tr><td><b>Node.js / npm</b></td><td>Engine that runs your app / installs its libraries.</td></tr>
+        <tr><td><b>Dependency</b></td><td>A library your app uses (listed in package.json).</td></tr>
+        <tr><td><b>React / Vite / Tailwind</b></td><td>UI toolkit / project setup tool / styling toolkit.</td></tr>
+        <tr><td><b>Git / GitHub</b></td><td>Save points / the online home Vercel deploys from.</td></tr>
+        <tr><td><b>Commit / push</b></td><td>Save a snapshot / send it to GitHub.</td></tr>
+        <tr><td><b>Vercel</b></td><td>Free hosting that publishes from GitHub.</td></tr>
+        <tr><td><b>Entra ID</b></td><td>Microsoft's sign-in system.</td></tr>
+        <tr><td><b>App registration</b></td><td>Introducing your app to Microsoft so it's trusted.</td></tr>
+        <tr><td><b>Tenant ID / Client ID</b></td><td>Your org's ID / your app's ID.</td></tr>
+        <tr><td><b>MSAL</b></td><td>Microsoft's sign-in library (a dependency).</td></tr>
+        <tr><td><b>Microsoft Graph</b></td><td>Doorway to read/write M365 data (like Excel).</td></tr>
+        <tr><td><b>Permission / access token</b></td><td>What the app may do / the pass proving it may.</td></tr>
+        <tr><td><b>Redirect URI</b></td><td>Where Microsoft returns users after sign-in (must be registered).</td></tr>
+      </table>
+    `
+  },
+  {
+    id:"coach-notes",
+    title:"22 · Prerequisites & facilitation",
+    html:`
+      <h2>Prerequisites & facilitation</h2>
+      <h3>Sort these before the relevant sessions</h3>
+      <ul>
+        <li><b>GitHub access</b> — accounts + ability to create repos and authenticate. Pre-create repos to save time.</li>
+        <li><b>App registration rights</b> — interns may lack them in Entra ID. Pre-create one each, or do Register &amp; Permissions with them.</li>
+        <li><b>Admin consent</b> — <code>Files.ReadWrite</code> (OneDrive) is usually user-consentable; SharePoint's <code>Sites.ReadWrite.All</code> needs a tenant admin.</li>
+        <li><b>Redirect URIs</b> — dev uses localhost; after Vercel, add the live URL too.</li>
+        <li><b>Vercel env vars</b> — if IDs live in <code>.env</code>, re-enter them in Vercel (not pushed to GitHub).</li>
+        <li><b>Excel table must exist first</b> — Graph writes into an existing table.</li>
+        <li><b>Tenant policies</b> — confirm your org allows app registrations &amp; this sign-in flow.</li>
+      </ul>
+      <h3>Facilitating over Teams</h3>
+      <ul>
+        <li>Share your screen and build alongside them; pause at each ✅ checkpoint.</li>
+        <li>Ask interns to share their screen when stuck — it's faster than describing an error.</li>
+        <li>Reward good <em>process</em> (spec → small steps → test → commit/push), not just a working app.</li>
+        <li>Keep a shared FAQ of errors your cohort hits — most repeat across interns.</li>
+        <li>Record sessions; installs and Microsoft setup are the parts people rewatch.</li>
+      </ul>
+      <div class="callout coach"><span class="h">👩‍🏫 You're done</span>
+      When every section is ticked, you've taught the full journey. Reset progress from the top to run it again
+      with the next cohort.</div>
+    `
+  },
+];
+
+const KEY = "coach_companion_done_v4";
+let current = 0;
+
+function loadDone(){ try{ return new Set(JSON.parse(localStorage.getItem(KEY))||[]); }catch(e){ return new Set(); } }
+function saveDone(set){ localStorage.setItem(KEY, JSON.stringify([...set])); }
+let done = loadDone();
+
+const nav = document.getElementById("nav");
+const content = document.getElementById("content");
+const pbar = document.getElementById("pbar");
+const ppct = document.getElementById("ppct");
+const doneBtn = document.getElementById("doneBtn");
+const doneStatus = document.getElementById("doneStatus");
+
+function renderNav(){
+  nav.innerHTML = "";
+  MODULES.forEach((m, i) => {
+    const b = document.createElement("button");
+    b.className = "navitem" + (i===current?" active":"") + (done.has(m.id)?" doneItem":"");
+    b.innerHTML = '<span class="navnum">'+(i+1)+'</span><span class="tick">✓</span><span>'+m.title.replace(/^\d+\s*·\s*/,"")+'</span>';
+    b.onclick = () => { current = i; render(); };
+    nav.appendChild(b);
+  });
+}
+function renderProgress(){
+  const pct = Math.round((done.size / MODULES.length) * 100);
+  pbar.style.width = pct + "%";
+  ppct.textContent = pct + "% (" + done.size + "/" + MODULES.length + ")";
+}
+function render(){
+  const m = MODULES[current];
+  content.innerHTML = m.html;
+  const isDone = done.has(m.id);
+  doneBtn.textContent = isDone ? "✓ Done — click to undo" : "Mark this section done";
+  doneBtn.className = "btn " + (isDone ? "done" : "primary");
+  doneStatus.textContent = isDone ? "Marked complete." : "";
+  renderNav();
+  renderProgress();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+doneBtn.onclick = () => {
+  const id = MODULES[current].id;
+  if(done.has(id)) done.delete(id); else done.add(id);
+  saveDone(done);
+  render();
+};
+document.getElementById("prevBtn").onclick = () => { if(current>0){current--; render();} };
+document.getElementById("nextBtn").onclick = () => { if(current<MODULES.length-1){current++; render();} };
+document.getElementById("resetBtn").onclick = () => {
+  if(confirm("Clear all progress?")){ done = new Set(); saveDone(done); render(); }
+};
+
+render();
+</script>
+</body>
+</html>

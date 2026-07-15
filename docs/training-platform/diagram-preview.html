@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Training Platform — Architecture Diagrams</title>
+  <style>
+    body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #f6f8fa; color: #1f2328; }
+    header { padding: 24px 32px; border-bottom: 1px solid #d8dee4; background: #ffffff; }
+    header h1 { margin: 0 0 4px; font-size: 20px; }
+    header p { margin: 0; color: #656d76; font-size: 14px; }
+    section { padding: 28px 32px; border-bottom: 1px solid #eaeef2; }
+    h2 { font-size: 17px; margin: 0 0 4px; }
+    .sub { color: #656d76; font-size: 13px; margin: 0 0 18px; }
+    .diagram { background: #ffffff; border: 1px solid #d8dee4; border-radius: 10px; padding: 20px; overflow-x: auto; }
+    .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 8px; vertical-align: middle; }
+    .a { background: #ddf4ff; color: #0550ae; }
+    .b { background: #e6f4ea; color: #0f5323; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Leaps Up — Training Platform Architecture</h1>
+    <p>Rendered preview of the Mermaid diagrams from the docs. Refresh after editing the docs.</p>
+  </header>
+
+  <section>
+    <h2>Approach A — Static Site + Google Sheets <span class="badge a">recommended</span></h2>
+    <p class="sub">No server. Free hosting + Google Sheet as the shared progress store.</p>
+    <div class="diagram">
+      <pre class="mermaid">
+flowchart TD
+    subgraph Authoring["1 - Authoring (in this repo)"]
+        Claude["Claude&lt;br/&gt;generates roadmap + content + quizzes"]
+        Coach["Coach&lt;br/&gt;reviews & sets approved: true"]
+        Files["content/*.md + roadmap.json + quiz.json"]
+        Claude --> Files
+        Coach -->|approves| Files
+    end
+
+    subgraph Delivery["2 - Delivery (GitHub Pages, static)"]
+        Site["Training site&lt;br/&gt;index.html + app.js"]
+        Trainee(["Trainee"])
+        Trainee -->|opens link| Site
+        Files -.published via git.-> Site
+    end
+
+    subgraph Data["3 - Progress & dashboard"]
+        AppsScript["Google Apps Script&lt;br/&gt;web endpoint (doPost/doGet)"]
+        Sheet[("Google Sheet&lt;br/&gt;progress rows")]
+        Dashboard["Dashboard page"]
+        Manager(["Manager"])
+        AppsScript --> Sheet
+        Sheet --> Dashboard
+        Manager -->|views| Dashboard
+    end
+
+    Site -->|"POST quiz result"| AppsScript
+    Dashboard -->|"GET progress"| AppsScript
+      </pre>
+    </div>
+  </section>
+
+  <section>
+    <h2>Approach B — Supabase <span class="badge b">upgrade path</span></h2>
+    <p class="sub">Real auth + Postgres + Row-Level Security for server-enforced gating.</p>
+    <div class="diagram">
+      <pre class="mermaid">
+flowchart TD
+    subgraph Authoring["1 - Authoring (in this repo)"]
+        Claude["Claude&lt;br/&gt;generates roadmap + content + quizzes"]
+        CoachA["Coach"]
+        Files["content/*.md + quiz.json"]
+        Claude --> Files
+    end
+
+    subgraph Delivery["2 - Delivery (static frontend or app)"]
+        Site["Training site&lt;br/&gt;+ Supabase JS client"]
+        Trainee(["Trainee"])
+        Trainee -->|login| Auth
+        Trainee --> Site
+        Files -.import/seed.-> DB
+    end
+
+    subgraph Supabase["3 - Supabase (managed)"]
+        Auth["Auth&lt;br/&gt;email / OAuth"]
+        DB[("Postgres&lt;br/&gt;users, roadmaps, sections,&lt;br/&gt;progress, quiz_attempts")]
+        RLS{{"Row-Level Security&lt;br/&gt;role-based access"}}
+        Fn["Edge Function&lt;br/&gt;server-side gating (optional)"]
+        Auth --> RLS
+        RLS --> DB
+        Fn --> DB
+    end
+
+    subgraph Views["Role views"]
+        Coach2(["Coach"])
+        Manager(["Manager"])
+    end
+
+    Site <-->|"read/write via SDK"| RLS
+    Site -->|"submit quiz"| Fn
+    CoachA -->|approves| Site
+    Coach2 -->|"review & approve content"| RLS
+    Manager -->|"dashboard queries"| RLS
+      </pre>
+    </div>
+  </section>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  </script>
+</body>
+</html>
