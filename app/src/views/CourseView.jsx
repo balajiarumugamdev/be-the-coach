@@ -114,6 +114,11 @@ export default function CourseView({
                 nextTitle={activeIdx + 1 < modules.length ? modules[activeIdx + 1].title : null}
                 alreadyPassed={completed.includes(module.id)}
                 onGrade={onGrade}
+                onProceed={() => {
+                  const next = modules[activeIdx + 1];
+                  if (next) setModuleId(next.id);
+                  else setShowCert(true);
+                }}
               />
             </>
           )}
@@ -142,7 +147,7 @@ function HelpBox({ course, onStuck }) {
   );
 }
 
-function Quiz({ course, module, isLast, nextTitle, alreadyPassed, onGrade }) {
+function Quiz({ course, module, isLast, nextTitle, alreadyPassed, onGrade, onProceed }) {
   const [round, setRound] = useState(0);
   const questions = useMemo(
     () => pickRandom(module.quiz.bank, module.quiz.deliverCount),
@@ -213,7 +218,7 @@ function Quiz({ course, module, isLast, nextTitle, alreadyPassed, onGrade }) {
 
       {error && <div className="text-sm text-red-600 mb-2">{error}</div>}
 
-      {!result ? (
+      {!result && (
         <button
           onClick={submit}
           disabled={busy}
@@ -221,22 +226,87 @@ function Quiz({ course, module, isLast, nextTitle, alreadyPassed, onGrade }) {
         >
           {busy ? "Checking…" : "Submit answers"}
         </button>
-      ) : result.passed ? (
-        <div className="bg-emerald-50 border border-emerald-500 text-emerald-800 rounded-lg px-4 py-3">
-          ✓ Passed — {result.correct}/{result.total} ({Math.round(result.score * 100)}%) on attempt #{result.attemptNo}.
-          {isLast ? " You've finished the course!" : ` "${nextTitle}" is now unlocked.`}
-        </div>
-      ) : (
-        <div className="bg-red-50 border border-red-400 text-red-800 rounded-lg px-4 py-3 flex items-center justify-between gap-3">
-          <span>Not quite — {result.correct}/{result.total} ({Math.round(result.score * 100)}%). You need {passPct}%.</span>
-          <button
-            onClick={tryAgain}
-            className="whitespace-nowrap px-3 py-1.5 rounded-md bg-red-600 text-white text-sm font-semibold hover:bg-red-700"
-          >
-            Try again
-          </button>
-        </div>
       )}
+
+      {result && (
+        <ResultModal
+          result={result}
+          questions={questions}
+          selected={selected}
+          isLast={isLast}
+          nextTitle={nextTitle}
+          passPct={passPct}
+          onProceed={onProceed}
+          onTryAgain={tryAgain}
+        />
+      )}
+    </div>
+  );
+}
+
+function ResultModal({ result, questions, selected, isLast, nextTitle, passPct, onProceed, onTryAgain }) {
+  const pct = Math.round(result.score * 100);
+  const byId = {};
+  (result.results || []).forEach((r) => { byId[r.id] = r; });
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+        <div className={`px-6 py-4 ${result.passed ? "bg-emerald-50" : "bg-red-50"}`}>
+          <div className={`text-lg font-bold ${result.passed ? "text-emerald-800" : "text-red-800"}`}>
+            {result.passed ? "Passed 🎉" : "Not quite"}
+          </div>
+          <div className="text-sm text-slate-600">
+            You scored {result.correct}/{result.total} ({pct}%). Need {passPct}% to{" "}
+            {isLast ? "finish the course" : "advance"}. · Attempt #{result.attemptNo}
+          </div>
+        </div>
+
+        <div className="px-6 py-4 space-y-4">
+          {questions.map((q, qi) => {
+            const r = byId[q.id] || {};
+            const chosen = r.chosen != null ? r.chosen : selected[q.id];
+            const correctIndex = r.correctIndex;
+            return (
+              <div key={q.id}>
+                <p className="font-medium mb-1.5">
+                  <span className={r.correct ? "text-emerald-600" : "text-red-600"}>{r.correct ? "✓" : "✗"}</span>{" "}
+                  {qi + 1}. {q.q}
+                </p>
+                <ul className="space-y-1">
+                  {q.options.map((o, oi) => {
+                    const isCorrect = oi === correctIndex;
+                    const isChosen = oi === chosen;
+                    let cls = "text-sm px-3 py-1.5 rounded-lg border ";
+                    if (isCorrect) cls += "border-emerald-400 bg-emerald-50 text-emerald-800";
+                    else if (isChosen) cls += "border-red-400 bg-red-50 text-red-800";
+                    else cls += "border-slate-200 text-slate-600";
+                    return (
+                      <li key={oi} className={cls}>
+                        {o}
+                        {isCorrect && <span className="font-medium"> — correct answer</span>}
+                        {isChosen && !isCorrect && <span className="font-medium"> — your answer</span>}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
+          {result.passed ? (
+            <button onClick={onProceed} className="px-5 py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700">
+              {isLast ? "Finish course →" : `Next: ${nextTitle} →`}
+            </button>
+          ) : (
+            <button onClick={onTryAgain} className="px-5 py-2.5 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700">
+              Try again
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

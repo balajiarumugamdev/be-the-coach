@@ -183,21 +183,24 @@ function grade_(body) {
   var delivered = body.delivered || [];      // array of question ids shown
   var answers = body.answers || {};          // { qid: optionIndex }
   var correct = 0;
-  var questionResults = delivered.map(function (qid) {
+  // Full per-question detail (incl. the correct answer) is returned for the results modal —
+  // safe because it only covers the questions already answered, after submission.
+  var results = delivered.map(function (qid) {
     var ok = answers[qid] === keys[qid];
     if (ok) correct++;
-    return { id: qid, correct: ok };
+    return { id: qid, correct: ok, correctIndex: keys[qid], chosen: answers[qid] };
   });
   var total = delivered.length || 1;
   var score = correct / total;
   var passed = score >= PASS_THRESHOLD;
 
   var attemptNo = countAttempts_(body.token, body.course, body.module) + 1;
+  var stored = results.map(function (r) { return { id: r.id, correct: r.correct }; });
   appendRow_("Attempts", {
     timestamp: new Date(), token: body.token, course_id: body.course, module_id: body.module,
-    attempt_no: attemptNo, score: score, passed: passed, question_results: JSON.stringify(questionResults)
+    attempt_no: attemptNo, score: score, passed: passed, question_results: JSON.stringify(stored)
   });
-  return { ok: true, passed: passed, score: score, correct: correct, total: total, attemptNo: attemptNo };
+  return { ok: true, passed: passed, score: score, correct: correct, total: total, attemptNo: attemptNo, results: results };
 }
 
 function help_(body) {

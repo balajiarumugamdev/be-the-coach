@@ -60,22 +60,25 @@ export function grade(token, courseId, moduleId, questions, selected) {
   const threshold = module.quiz.passThreshold;
 
   let correct = 0;
-  const questionResults = questions.map((q) => {
+  const results = questions.map((q) => {
     const bankQ = module.quiz.bank.find((b) => b.id === q.id);
-    const ok = selected[q.id] === bankQ.answer;
+    const correctIndex = bankQ ? bankQ.answer : undefined; // undefined: answers are server-side now
+    const ok = selected[q.id] === correctIndex;
     if (ok) correct++;
-    return { id: q.id, correct: ok };
+    return { id: q.id, correct: ok, correctIndex, chosen: selected[q.id] };
   });
   const score = correct / questions.length;
   const passed = score >= threshold;
 
   const attemptNo = getAttempts(token, courseId, moduleId).length + 1;
   addAttempt(token, courseId, moduleId, {
-    attemptNo, score, passed, questionResults, ts: Date.now(),
+    attemptNo, score, passed,
+    questionResults: results.map((r) => ({ id: r.id, correct: r.correct })),
+    ts: Date.now(),
   });
   if (passed) markPassed(token, courseId, moduleId);
 
-  return { passed, score, correct, total: questions.length, attemptNo };
+  return { passed, score, correct, total: questions.length, attemptNo, results };
 }
 
 /* ---------- coach: approval + feedback ---------- */
