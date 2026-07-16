@@ -29,6 +29,8 @@ jobs:
         run: |
           npm ci
           npm run build
+      - name: Copy standalone guides into the site
+        run: cp docs/teacher-form-training/*.html app/dist/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
