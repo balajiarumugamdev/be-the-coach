@@ -136,7 +136,7 @@ function bootstrap_(token) {
   return {
     ok: true,
     user: { name: u.name, email: u.email, role: u.role, track: u.track },
-    passed: st.passed, attempts: st.attempts,
+    passed: st.passed, attempts: st.attempts, scores: st.scores,
     review: ct.review, notes: ct.notes
   };
 }
@@ -144,16 +144,21 @@ function bootstrap_(token) {
 // passed modules + attempt counts for one token
 function state_(token) {
   var rows = readRows_("Attempts").filter(function (r) { return r.token === token; });
-  var passed = {}, attempts = {};
+  var passed = {}, attempts = {}, scores = {};
   rows.forEach(function (r) {
     attempts[r.course_id] = attempts[r.course_id] || {};
     attempts[r.course_id][r.module_id] = (attempts[r.course_id][r.module_id] || 0) + 1;
+    scores[r.course_id] = scores[r.course_id] || {};
+    var sc = Number(r.score) || 0;                       // best (highest) score per module, 0..1
+    if (scores[r.course_id][r.module_id] === undefined || sc > scores[r.course_id][r.module_id]) {
+      scores[r.course_id][r.module_id] = sc;
+    }
     if (String(r.passed) === "true" || r.passed === true) {
       passed[r.course_id] = passed[r.course_id] || [];
       if (passed[r.course_id].indexOf(r.module_id) === -1) passed[r.course_id].push(r.module_id);
     }
   });
-  return { ok: true, passed: passed, attempts: attempts };
+  return { ok: true, passed: passed, attempts: attempts, scores: scores };
 }
 
 // approval statuses + coach notes (used by trainee + coach views)

@@ -11,6 +11,7 @@ export default function TraineeHome({ user, boot, reload }) {
 
   const passedFor = (cid) => boot.state?.passed?.[cid] || [];
   const attemptsFor = (cid) => boot.state?.attempts?.[cid] || {};
+  const scoresFor = (cid) => boot.state?.scores?.[cid] || {};
   const reviewFor = (cid) => boot.content?.review?.[cid] || {};
   const notesFor = (cid) => boot.content?.notes?.[cid] || {};
 
@@ -43,11 +44,10 @@ export default function TraineeHome({ user, boot, reload }) {
         course={course}
         passedList={passedFor(course.id)}
         attemptsMap={attemptsFor(course.id)}
+        scoresMap={scoresFor(course.id)}
         review={reviewFor(course.id)}
         notes={notesFor(course.id)}
-        moduleId={nav.moduleId}
-        setModuleId={(id) => setNav((n) => ({ ...n, moduleId: id }))}
-        onBack={() => setNav({ screen: "list", courseId: null, moduleId: null })}
+        onBack={() => setNav({ screen: "list", courseId: null })}
         onGrade={onGrade}
         onHelp={onHelp}
       />

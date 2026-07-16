@@ -13,26 +13,26 @@ function pickRandom(arr, n) {
 const approvedOf = (review, id) => (review[id] ? review[id].status === "approved" : true);
 
 export default function CourseView({
-  user, course, passedList, attemptsMap, review, notes,
-  moduleId, setModuleId, onBack, onGrade, onHelp,
+  user, course, passedList, attemptsMap, scoresMap = {}, review, notes,
+  onBack, onGrade, onHelp,
 }) {
   const modules = course.modules;
   const completed = passedList;
-
   const unlockedIndex = (idx) => idx === 0 || completed.includes(modules[idx - 1].id);
 
-  let activeId = moduleId;
-  if (!activeId) {
-    const firstIncomplete = modules.find((m) => !completed.includes(m.id));
-    activeId = (firstIncomplete || modules[modules.length - 1]).id;
-  }
-  const activeIdx = modules.findIndex((m) => m.id === activeId);
-  const module = modules[activeIdx];
-
-  const allDone = completed.length === modules.length;
   const [showCert, setShowCert] = useState(false);
+  // Pin the active module in state so a *pass* doesn't auto-advance and dismiss the results
+  // modal. It only changes when the learner clicks a module or the modal's Next button.
+  const [activeId, setActiveId] = useState(() => {
+    const firstIncomplete = modules.find((m) => !completed.includes(m.id));
+    return (firstIncomplete || modules[modules.length - 1]).id;
+  });
+
   if (showCert) return <Certificate user={user} course={course} onBack={() => setShowCert(false)} />;
 
+  const activeIdx = modules.findIndex((m) => m.id === activeId);
+  const module = modules[activeIdx];
+  const allDone = completed.length === modules.length;
   const pct = Math.round((completed.length / modules.length) * 100);
 
   return (
@@ -56,21 +56,24 @@ export default function CourseView({
             const unlocked = unlockedIndex(idx);
             const active = m.id === activeId;
             const attempts = attemptsMap[m.id] || 0;
+            const scorePct = scoresMap[m.id] != null ? Math.round(scoresMap[m.id] * 100) : null;
             const dot = done ? "✓" : unlocked ? "•" : "🔒";
             const dotColor = done ? "text-emerald-600" : unlocked ? "text-blue-600" : "text-slate-400";
             return (
               <button
                 key={m.id}
                 disabled={!unlocked}
-                onClick={() => setModuleId(m.id)}
+                onClick={() => setActiveId(m.id)}
                 className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-left ${
                   active ? "bg-sky-50" : "hover:bg-slate-50"
                 } ${unlocked ? "" : "text-slate-400 cursor-not-allowed"}`}
               >
                 <span className={`w-5 text-center flex-none ${dotColor}`}>{dot}</span>
                 <span className="flex-1">{idx}. {m.title}</span>
-                {attempts > 0 && !done && (
-                  <span className="text-[10px] text-amber-600" title="attempts">{attempts}×</span>
+                {attempts > 0 && (
+                  <span className="text-[10px] text-slate-400 whitespace-nowrap" title={`${attempts} attempt(s)`}>
+                    {done && scorePct != null ? `${scorePct}% · ` : ""}{attempts}×
+                  </span>
                 )}
               </button>
             );
@@ -116,7 +119,7 @@ export default function CourseView({
                 onGrade={onGrade}
                 onProceed={() => {
                   const next = modules[activeIdx + 1];
-                  if (next) setModuleId(next.id);
+                  if (next) setActiveId(next.id);
                   else setShowCert(true);
                 }}
               />

@@ -30,7 +30,7 @@ export async function loadBootstrap(token) {
   if (!r || !r.ok) return { user: null };
   return {
     user: r.user,
-    state: { passed: r.passed || {}, attempts: r.attempts || {} },
+    state: { passed: r.passed || {}, attempts: r.attempts || {}, scores: r.scores || {} },
     content: { review: r.review || {}, notes: r.notes || {} },
   };
 }
@@ -38,19 +38,23 @@ export async function loadBootstrap(token) {
 // { passed: {courseId:[moduleIds]}, attempts: {courseId:{moduleId:count}} }
 export async function loadState(token) {
   if (!USE_BACKEND) {
-    const passed = {}, attempts = {};
+    const passed = {}, attempts = {}, scores = {};
     Object.values(COURSES).forEach((c) => {
       passed[c.id] = local.getPassed(token, c.id);
       attempts[c.id] = {};
+      scores[c.id] = {};
       c.modules.forEach((m) => {
-        const n = local.getAttempts(token, c.id, m.id).length;
-        if (n) attempts[c.id][m.id] = n;
+        const arr = local.getAttempts(token, c.id, m.id);
+        if (arr.length) {
+          attempts[c.id][m.id] = arr.length;
+          scores[c.id][m.id] = Math.max(...arr.map((a) => a.score || 0));
+        }
       });
     });
-    return { passed, attempts };
+    return { passed, attempts, scores };
   }
   const r = await api.fetchState(token);
-  return { passed: r.passed || {}, attempts: r.attempts || {} };
+  return { passed: r.passed || {}, attempts: r.attempts || {}, scores: r.scores || {} };
 }
 
 // { review: {courseId:{moduleId:{status,feedback}}}, notes: {courseId:{moduleId:note}} }
