@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Demo Prompt Library — To-Do App with Claude</title>
+<style>
+  :root{
+    --bg:#f6f8fa; --panel:#fff; --panel2:#eef1f5; --border:#d8dee4;
+    --text:#1f2328; --muted:#656d76; --accent:#0969da; --accent2:#1a7f37;
+    --amber-bg:#fff3d6; --amber-bd:#e0c060; --amber-tx:#7a5200;
+    --radius:12px; --shadow:0 1px 3px rgba(27,31,36,.08);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;}
+  header{background:var(--panel);border-bottom:1px solid var(--border);padding:16px 28px;position:sticky;top:0;z-index:10;}
+  header .row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  header h1{font-size:18px;margin:0;}
+  header .sub{color:var(--muted);font-size:13px;margin:2px 0 0;}
+  .progresswrap{display:flex;align-items:center;gap:10px;min-width:240px;}
+  .progressbar{flex:1;height:8px;background:var(--panel2);border-radius:999px;overflow:hidden;}
+  .progressbar>span{display:block;height:100%;background:var(--accent2);width:0;transition:width .2s;}
+  .progresspct{font-size:12px;color:var(--muted);white-space:nowrap;}
+  .btn{border:1px solid var(--border);background:var(--panel);color:var(--text);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:13px;}
+  .btn:hover{border-color:var(--accent);}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+  .btn.done{background:var(--accent2);border-color:var(--accent2);color:#fff;}
+  .layout{display:grid;grid-template-columns:300px 1fr;align-items:start;}
+  @media(max-width:860px){.layout{grid-template-columns:1fr;}}
+  nav{border-right:1px solid var(--border);background:var(--panel);min-height:calc(100vh - 66px);padding:14px 10px;position:sticky;top:66px;max-height:calc(100vh - 66px);overflow-y:auto;}
+  nav .navitem{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:none;background:none;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13.5px;color:var(--text);}
+  nav .navitem:hover{background:var(--panel2);}
+  nav .navitem.active{background:#ddf4ff;font-weight:600;}
+  nav .tick{width:18px;height:18px;flex:0 0 18px;border-radius:50%;border:1.5px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:transparent;}
+  nav .navitem.doneItem .tick{background:var(--accent2);border-color:var(--accent2);color:#fff;}
+  nav .navnum{color:var(--muted);font-size:11px;width:22px;flex:0 0 22px;text-align:right;}
+  main{padding:28px 34px 80px;max-width:820px;}
+  h2{font-size:1.5rem;margin:0 0 .5rem;}
+  .teaches{display:inline-block;background:#ddf4ff;color:#0550ae;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;margin-bottom:14px;}
+  p{margin:.6rem 0;}
+  .plabel{font-size:12px;font-weight:600;color:var(--muted);margin:14px 0 4px;}
+  .promptwrap{position:relative;margin:10px 0;}
+  .promptwrap pre{background:#0b1020;color:#e6edf3;padding:16px 16px;padding-right:84px;border-radius:10px;overflow-x:auto;font-size:13.5px;line-height:1.5;white-space:pre-wrap;margin:0;font-family:ui-monospace,Consolas,monospace;}
+  .copy{position:absolute;top:10px;right:10px;background:#1f2937;color:#e6edf3;border:1px solid #374151;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;}
+  .copy:hover{background:#374151;}
+  .callout{border-radius:.5rem;padding:.7rem 1rem;margin:14px 0;font-size:.95rem;background:var(--amber-bg);border:1px solid var(--amber-bd);color:var(--amber-tx);}
+  .callout .h{font-weight:700;}
+  table{width:100%;border-collapse:collapse;margin:.6rem 0;font-size:.92rem;}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;}
+  th{background:var(--panel2);}
+  code{background:var(--panel2);padding:.1rem .35rem;border-radius:.3rem;font-size:.85em;}
+  .donebar{display:flex;align-items:center;gap:12px;margin-top:26px;padding:14px 16px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);}
+  .footernav{display:flex;justify-content:space-between;gap:12px;margin-top:24px;border-top:1px solid var(--border);padding-top:18px;}
+  .lead{background:var(--panel2);border-radius:.5rem;padding:.7rem .95rem;margin:.4rem 0 1rem;}
+</style>
+</head>
+<body>
+<header>
+  <div class="row">
+    <div>
+      <h1>Demo Prompt Library 🧪 — Build a To-Do App with Claude</h1>
+      <p class="sub">Your live demo while trainees build the teacher form. Copy each prompt, run it, narrate the point.</p>
+    </div>
+    <div class="progresswrap">
+      <div class="progressbar"><span id="pbar"></span></div>
+      <span class="progresspct" id="ppct">0%</span>
+      <button class="btn" id="resetBtn" title="Clear progress">Reset</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <nav id="nav"></nav>
+  <main>
+    <div id="content"></div>
+    <div class="donebar">
+      <button class="btn primary" id="doneBtn">Mark this step done</button>
+      <span id="doneStatus" style="font-size:14px;color:var(--muted)"></span>
+    </div>
+    <div class="footernav">
+      <button class="btn" id="prevBtn">← Previous</button>
+      <button class="btn" id="nextBtn">Next →</button>
+    </div>
+  </main>
+</div>
+
+<script>
+const STEPS = [
+  {
+    id:"how",
+    title:"How to use this demo",
+    intro:`<p class="lead"><b>You</b> build a simple To-Do app live (screen-shared); <b>trainees</b>
+      build the Teacher-Info form alongside, using the same moves.</p>
+      <p>The To-Do app has <b>no backend</b> — tasks are saved in the browser's <code>localStorage</code> —
+      so the demo stays focused on the <b>workflow</b> (describe → build → run → test → commit), not on
+      Microsoft setup. Trainees add that complexity themselves on the teacher form.</p>`,
+    callout:`<span class="h">The loop to repeat all demo:</span> spec a feature → let Claude build it →
+      run it → write its tests → commit → next feature. Say it out loud every few steps.`,
+  },
+  {
+    id:"idea", title:"0 · The initial idea", teaches:"Describe intent; plan before coding",
+    prompts:[{ text:`I want to build a simple to-do app, and I'm a beginner — you'll write all the code.
+The idea: a web page where I can add tasks, mark them done, delete them, filter by
+All / Active / Completed, and my tasks should still be there after I refresh the page.
+Don't write any code yet. Confirm you understand, and ask me anything that's unclear.` }],
+    point:"A clear description gets a clear result. We start by aligning, not coding.",
+  },
+  {
+    id:"claudemd", title:"1 · Create CLAUDE.md (project rules)", teaches:"CLAUDE.md = persistent context Claude reads every session",
+    prompts:[{ text:`Create a CLAUDE.md for this project. Include:
+- What it is: a beginner-friendly to-do app.
+- Tech: React + Vite + Tailwind, data saved in the browser's localStorage (no backend).
+- Rules: keep it simple; explain each change in plain English; build ONE feature at a time;
+  always keep the app working; never add a dependency without telling me what and why.
+- How to run it (npm run dev) and how to run tests (npm test).
+Keep it short.` }],
+    point:"Open the file after — this is the 'onboarding note' Claude now reads automatically.",
+  },
+  {
+    id:"features", title:"2 · Create FEATURES.md (the plan)", teaches:"Plan the work as a checklist, smallest first",
+    prompts:[{ text:`Create a FEATURES.md listing the features for this to-do app as a checklist, in the order
+we should build them, smallest first: add a task, show the task list, mark a task done/undone,
+delete a task, edit a task, filter (All/Active/Completed) with a remaining-count, clear
+completed, and save to localStorage so tasks persist. For each, one line describing what
+"done" looks like. Don't build anything yet.` }],
+    point:"A living plan we check off as we go.",
+  },
+  {
+    id:"spec", title:"3 · Spec the first feature", teaches:"Spec each feature — the spec becomes the test list",
+    prompts:[{ text:`Let's spec just the first feature: "add a task". Turn it into a short spec: what the user
+does, the rules (an empty or spaces-only task is rejected; trim the text), and what success
+looks like (the new task appears at the top of the list and the input box clears). Ask me
+anything unclear, then wait — don't build yet.` }],
+    point:"Each rule here becomes a test in step 8. If you can't test a rule, it isn't clear enough.",
+  },
+  {
+    id:"tech", title:"4 · Confirm the tech", teaches:"Understand why React (interactive, stateful, persists)",
+    prompts:[{ text:`Quick check before building: this app has changing data that must persist. In one sentence,
+confirm React + Vite + Tailwind + localStorage is a sensible choice for a beginner, and why.` }],
+    point:"Contrast with the teacher form — same stack, different storage (localStorage vs Excel).",
+  },
+  {
+    id:"scaffold", title:"5 · Scaffold and run", teaches:"Scaffolding installs React; Tailwind is your first dependency",
+    prompts:[{ text:`Create the React app with Vite in a folder called todo-app, add Tailwind and set it up,
+install everything, then start it and give me the web address. One step at a time.` }],
+    point:"Show package.json — React and Tailwind now listed as dependencies.",
+  },
+  {
+    id:"git", title:"6 · Version control", teaches:"Save points; the add → commit → push flow",
+    prompts:[{ text:`Set up Git for this project and make the first commit with the message "scaffold + tailwind".
+Then, in one line each, tell me what git add, git commit, and git push do — because I'll say
+"save my work" often and I want to know what's happening.` }],
+    point:"From now, after every working step we 'save our work' (commit).",
+  },
+  {
+    id:"build1", title:"7 · Build feature 1 — add a task", teaches:"Build from the spec, one small step, then ask Claude to explain",
+    prompts:[{ text:`Build the "add a task" feature exactly from our spec: an input box and an Add button; adding
+puts the new task at the TOP of the list; empty or spaces-only input is rejected; the input
+clears after adding. Then explain in plain English what you changed.` }],
+    point:"Refresh the browser — describe fields in words, get a working UI.",
+  },
+  {
+    id:"test1", title:"8 · Test feature 1", teaches:"Unit tests come from the spec rules; they catch regressions",
+    prompts:[{ text:`Write unit tests using Vitest and React Testing Library for the add-task feature:
+(1) adding a task shows it in the list, (2) an empty task is rejected, (3) the input clears
+after adding. Then give me the command to run them.` }],
+    point:"Run npm test, watch them pass. Each test mirrors a spec rule.",
+  },
+  {
+    id:"save1", title:"9 · Save your work", teaches:"Commit after every working step",
+    prompts:[{ text:`Save my work: commit with the message "add task feature + tests".` }],
+    point:"add → commit → push. Do this after each feature.",
+  },
+  {
+    id:"rest", title:"10 · Build the rest (same loop)", teaches:"Repeat spec → build → test → commit for each",
+    intro:`<p>Run these in order. After each, say <em>"write tests for that"</em> and <em>"save my work"</em>
+      to keep the rhythm.</p>`,
+    prompts:[
+      { label:"Mark done / undone", text:`Add the ability to mark a task done and undone with a checkbox. Done tasks show with a
+strikethrough and a lighter colour. Explain the change.` },
+      { label:"Delete a task", text:`Add a small delete (×) button to each task that removes it, with a quick confirm. Explain.` },
+      { label:"Edit a task", text:`Let me edit a task's text inline — double-click the task to edit, Enter to save, Escape to
+cancel. Reject an empty edit. Explain.` },
+      { label:"Filter + remaining count", text:`Add filter buttons: All / Active / Completed, and show "N tasks left" for the active count.
+Keep the current filter highlighted. Explain.` },
+      { label:"Clear completed", text:`Add a "Clear completed" button that removes all done tasks at once. Only show it when there
+is at least one completed task. Explain.` },
+      { label:"Persist to localStorage", text:`Save the tasks to the browser's localStorage so they survive a page refresh, and load them
+when the app starts. Explain in plain English how it works. Then let's test it: I'll add
+tasks and refresh.` },
+    ],
+    point:"This is the whole job — a loop of small, tested, committed steps.",
+  },
+  {
+    id:"debug", title:"11 · Debug on purpose", teaches:"Errors are normal — paste them back with context",
+    prompts:[{ text:`I ran the app and got this error: [paste the whole error]. What does it mean, and how do I
+fix it? I was trying to [what you did].` }],
+    point:"The single most important habit — don't panic, paste it back.",
+  },
+  {
+    id:"files", title:"12 · Understand your files", teaches:"What the project files are (so it's not magic)",
+    prompts:[{ text:`Give me a plain-English tour of my project files: package.json, node_modules, the src folder,
+and where my to-do code actually lives.` }],
+    point:"package.json = ingredients list; node_modules = downloaded libraries; src = your code.",
+  },
+  {
+    id:"skill", title:"13 · Make a Skill (optional)", teaches:"When repetition is worth a reusable skill",
+    prompts:[{ text:`I keep asking you to build a feature, then write its tests, then commit. Help me create a
+Claude Code skill that runs this "feature → tests → commit" flow the same way every time, and
+tell me where it gets saved.` }],
+    point:"Create a skill only when you've repeated yourself — not for one-offs.",
+  },
+  {
+    id:"deploy", title:"14 · Deploy it", teaches:"Shipping; push → auto-redeploy",
+    prompts:[{ text:`Help me put this to-do app online for free. It has no backend, so recommend the simplest
+option (GitHub Pages or Vercel) and walk me through it step by step. Remind me how future
+changes get published.` }],
+    point:"Same deploy story as the platform — push to redeploy.",
+  },
+  {
+    id:"capstone", title:"15 · Capstone — make it yours", teaches:"Apply the whole loop independently",
+    prompts:[{ text:`Add one nice extension of my choice — a due date on each task (and highlight overdue ones).
+Spec it briefly first, then build it, write a test, and I'll commit.` }],
+    point:"Spec → build → test → commit, done solo. That's competence.",
+  },
+  {
+    id:"map", title:"What this demo teaches", teaches:"Map to the Coach Teaching Guide",
+    html:`<table>
+      <tr><th>Demo step</th><th>Concept</th></tr>
+      <tr><td>0, 3</td><td>Describe intent · Write a specification</td></tr>
+      <tr><td>1</td><td>CLAUDE.md — project memory</td></tr>
+      <tr><td>2</td><td>Planning the work</td></tr>
+      <tr><td>5, 6</td><td>Choosing tech · dependencies · Git (add/commit/push)</td></tr>
+      <tr><td>7</td><td>The build loop (describe → build → run → explain)</td></tr>
+      <tr><td>8, 10-persist</td><td>Test cases · unit tests · regressions</td></tr>
+      <tr><td>11</td><td>Handling errors</td></tr>
+      <tr><td>12</td><td>The important project files</td></tr>
+      <tr><td>13</td><td>Claude Code Skills</td></tr>
+      <tr><td>14</td><td>Deploy</td></tr>
+    </table>
+    <div class="callout"><span class="h">Teaching tip:</span> keep your To-Do app one step <em>ahead</em>
+    of where trainees are on the teacher form, so when they hit the same concept (a spec, a dependency, a
+    commit, a test) they've just watched you do it on the simpler app.</div>`,
+  },
+];
+
+/* ---------- helpers ---------- */
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function copyFromPre(btn){
+  var text = btn.parentElement.querySelector("pre").textContent;
+  var label = btn.textContent;
+  var reset = function(){ btn.textContent = "Copied!"; setTimeout(function(){ btn.textContent = label; }, 1200); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(reset).catch(function(){ legacyCopy(text, reset); });
+  } else { legacyCopy(text, reset); }
+}
+function legacyCopy(text, cb){
+  var ta = document.createElement("textarea"); ta.value = text; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand("copy"); cb(); } catch(e){}
+  document.body.removeChild(ta);
+}
+window.copyFromPre = copyFromPre;
+
+/* ---------- state ---------- */
+var KEY = "todo_prompts_done_v1";
+var current = 0;
+function loadDone(){ try{ return new Set(JSON.parse(localStorage.getItem(KEY))||[]); }catch(e){ return new Set(); } }
+function saveDone(s){ localStorage.setItem(KEY, JSON.stringify([...s])); }
+var done = loadDone();
+
+var nav = document.getElementById("nav");
+var content = document.getElementById("content");
+var pbar = document.getElementById("pbar");
+var ppct = document.getElementById("ppct");
+var doneBtn = document.getElementById("doneBtn");
+var doneStatus = document.getElementById("doneStatus");
+
+function renderNav(){
+  nav.innerHTML = "";
+  STEPS.forEach(function(s, i){
+    var b = document.createElement("button");
+    b.className = "navitem" + (i===current?" active":"") + (done.has(s.id)?" doneItem":"");
+    b.innerHTML = '<span class="navnum">'+(i+1)+'</span><span class="tick">✓</span><span>'+s.title+'</span>';
+    b.onclick = function(){ current = i; render(); };
+    nav.appendChild(b);
+  });
+}
+function renderProgress(){
+  var pct = Math.round((done.size / STEPS.length) * 100);
+  pbar.style.width = pct + "%";
+  ppct.textContent = pct + "% (" + done.size + "/" + STEPS.length + ")";
+}
+function render(){
+  var s = STEPS[current];
+  var html = "<h2>" + s.title + "</h2>";
+  if (s.teaches) html += '<span class="teaches">Teaches: ' + s.teaches + '</span>';
+  if (s.intro) html += s.intro;
+  if (s.prompts) {
+    s.prompts.forEach(function(p){
+      html += '<div class="promptwrap">';
+      if (p.label) html += '<div class="plabel">' + p.label + '</div>';
+      html += '<button class="copy" onclick="copyFromPre(this)">Copy</button>';
+      html += '<pre>' + esc(p.text) + '</pre></div>';
+    });
+  }
+  if (s.point) html += '<div class="callout"><span class="h">Point out:</span> ' + s.point + '</div>';
+  if (s.callout) html += '<div class="callout">' + s.callout + '</div>';
+  if (s.html) html += s.html;
+  content.innerHTML = html;
+
+  var isDone = done.has(s.id);
+  doneBtn.textContent = isDone ? "✓ Done — click to undo" : "Mark this step done";
+  doneBtn.className = "btn " + (isDone ? "done" : "primary");
+  doneStatus.textContent = isDone ? "Done." : "";
+  renderNav(); renderProgress();
+  window.scrollTo({ top:0, behavior:"smooth" });
+}
+doneBtn.onclick = function(){
+  var id = STEPS[current].id;
+  if (done.has(id)) done.delete(id); else done.add(id);
+  saveDone(done); render();
+};
+document.getElementById("prevBtn").onclick = function(){ if(current>0){ current--; render(); } };
+document.getElementById("nextBtn").onclick = function(){ if(current<STEPS.length-1){ current++; render(); } };
+document.getElementById("resetBtn").onclick = function(){ if(confirm("Clear progress?")){ done = new Set(); saveDone(done); render(); } };
+
+render();
+</script>
+</body>
+</html>

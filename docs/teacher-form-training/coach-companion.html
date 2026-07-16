@@ -230,6 +230,26 @@ const MODULES = [
       <div class="callout say"><span class="h">🗣️ Say to the intern</span>
       "A vague prompt gets a vague result. Tell Claude who you are, what you want, and what to do next —
       then check what it did."</div>
+
+      <h3>Vague vs specific — the same request, two ways</h3>
+      <p>Show interns both. The first leaves every decision to Claude (and it guesses); the second tells it
+      who, what, and what "done" looks like.</p>
+      <div class="promptbox"><div class="label">👎 Vague prompt</div>
+      "Make a form for teachers."</div>
+      <div class="promptbox"><div class="label">👍 Specific prompt</div>
+      "I'm a beginner. Build a simple form that collects a teacher's <b>full name, email, subject, and years
+      of experience</b>. Make email <b>required and validated</b>. On submit, show a <b>"Thank you, saved!"</b>
+      message. Keep the layout clean and simple, and explain what you changed after."</div>
+      <table>
+        <tr><th>The vague one leaves open…</th><th>The specific one decides…</th></tr>
+        <tr><td>Which fields? Required or not?</td><td>Four named fields; email required + validated</td></tr>
+        <tr><td>What happens on submit?</td><td>Shows "Thank you, saved!"</td></tr>
+        <tr><td>How should it look? Who's it for?</td><td>Clean &amp; simple; built for a beginner, with an explanation</td></tr>
+      </table>
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "Every decision you don't make, Claude makes for you — and it has to guess. The specific prompt gets you
+      what <em>you</em> pictured on the first try."</div>
+
       <div class="qa"><span class="q">❓ "What if Claude does something I didn't ask for?"</span>
       <span class="a">Tell it: 'that's not what I wanted — undo that and do X instead.' You're always in control.</span></div>
       <div class="callout coach"><span class="h">👩‍🏫 Coach note</span>
@@ -262,7 +282,33 @@ const MODULES = [
       <div class="qa"><span class="q">❓ "Does Claude remember everything from yesterday?"</span>
       <span class="a">Not automatically. For things it should <em>always</em> know about your project, we use a CLAUDE.md file — next.</span></div>
 
-      <h3>2) CLAUDE.md — your project's memory</h3>
+      <h3>2) Tokens &amp; the context window — how much Claude can hold at once</h3>
+      <p><b>What is a token:</b> a <b>token</b> is a small chunk of text — very roughly a word or a
+      piece of a word (about 4 characters, so ~¾ of a word on average). Claude doesn't read letters one
+      by one; it reads and writes in tokens. "Building a form" is a handful of tokens; a whole file might
+      be hundreds or thousands. Everything you type and everything Claude replies is counted in tokens.</p>
+      <p><b>What is the context window:</b> the <b>context window</b> is the <em>total amount of tokens
+      Claude can keep in mind at one time</em> — your conversation so far, plus the files it's been shown,
+      plus its own replies. Think of it as the size of Claude's desk: big, but not infinite. When the desk
+      fills up, the oldest papers get pushed off the edge — that's why very long chats start to "forget"
+      early details.</p>
+      <p><b>Why it matters:</b> this is the mechanical reason behind the Context rule above. A fresh chat
+      is an empty desk (full window free); a long, sprawling chat is a cluttered desk where important facts
+      compete for space. You get better answers by keeping the window focused on what's relevant.</p>
+      <p><b>How to manage it:</b></p>
+      <ul>
+        <li>Start a <b>fresh chat</b> (<code>/clear</code>) for a new task — empties the desk.</li>
+        <li>Show Claude <b>only the files that matter</b> for the current question, not everything.</li>
+        <li>Put always-needed facts in <b>CLAUDE.md</b> (next) so they don't eat up the window each time.</li>
+      </ul>
+      <div class="callout say"><span class="h">🗣️ Analogy to say</span>
+      "A token is a chunk of text; the context window is Claude's desk. It's roomy but not endless — when it
+      fills up, the oldest stuff falls off. Keep the desk tidy and Claude stays sharp."</div>
+      <div class="qa"><span class="q">❓ "Do I need to count tokens?"</span>
+      <span class="a">No — you never count them by hand. Just know the window is finite: start fresh for
+      new tasks and don't dump in files you don't need.</span></div>
+
+      <h3>3) CLAUDE.md — your project's memory</h3>
       <p><b>What:</b> a plain file named <code>CLAUDE.md</code> in your project that Claude Code <b>reads
       automatically every time it starts.</b> It's where you write what Claude should always know: what the
       project is, how to run and test it, conventions, and any "always do / never do" rules.</p>
@@ -277,7 +323,7 @@ const MODULES = [
       "CLAUDE.md is an onboarding note Claude reads before every shift — put the project's ground rules there
       once, and you never repeat them."</div>
 
-      <h3>3) Skills — reusable know-how</h3>
+      <h3>4) Skills — reusable know-how</h3>
       <p><b>What:</b> a <b>Skill</b> is a saved packet of instructions/steps Claude pulls in <em>when it's
       relevant</em>. Where CLAUDE.md is <em>always</em> loaded, a skill loads <em>on demand</em> for a specific
       kind of task.</p>
@@ -301,7 +347,7 @@ const MODULES = [
       <span class="a">Always-true project facts → CLAUDE.md. A specific repeatable procedure you trigger
       sometimes → a skill.</span></div>
 
-      <h3>4) A few more concepts that pay off</h3>
+      <h3>5) A few more concepts that pay off</h3>
       <ul>
         <li><b>Plan before big changes</b> — "show me your plan first"; you approve the approach before any code changes.</li>
         <li><b>Be specific and iterative</b> — small, clear asks beat one giant vague one.</li>
@@ -450,6 +496,28 @@ const MODULES = [
       <div class="promptbox"><div class="label">Say to Claude</div>
       "Here's my rough idea: [paste your five answers]. Turn this into a clear, short specification and ask me
       about anything unclear before we build."</div>
+
+      <h3>What a good spec actually looks like</h3>
+      <p>Answer the five questions in plain English — no jargon needed. Here's a filled-in example for our
+      teacher form that interns can copy the <em>shape</em> of:</p>
+      <div class="promptbox"><div class="label">📄 Example specification — Teacher Info Form</div>
+      <b>1. What it's for:</b> Collect basic details about a teacher and save them so the office has a record.<br>
+      <b>2. Who uses it &amp; how:</b> A teacher opens the page, signs in with their Microsoft account, fills the
+      form once, and submits.<br>
+      <b>3. What info it captures:</b> Full name, email, subject taught, years of experience.<br>
+      <b>4. The rules:</b>
+        <ul style="margin:.3rem 0">
+          <li>All fields are required.</li>
+          <li>Email must be a valid email address.</li>
+          <li>Years of experience must be a number of 0 or more.</li>
+          <li>A teacher can only submit after signing in.</li>
+        </ul>
+      <b>5. What success looks like:</b> On a valid submit, the teacher sees "Thank you, saved!" and a new row
+      is added to the Excel sheet with their answers. Invalid submits show a clear error and save nothing.</div>
+      <p><b>Why this is good:</b> it's specific and testable — every rule is something you can later check —
+      but it stays short and says <em>what</em>, not <em>how</em> (it doesn't dictate the code). Notice it names
+      the exact success message and the exact fields, so there's nothing left to guess.</p>
+
       <h3>Link the spec to your tests</h3>
       <p><b>The key idea to teach:</b> the spec <em>defines what "correct" means</em> — so your test cases come
       straight from it. <b>Each rule in the spec becomes a test case.</b> (You'll write the actual tests later,
@@ -790,8 +858,88 @@ const MODULES = [
     `
   },
   {
+    id:"prompt-library",
+    title:"21 · Prompt library (copy-paste at every stage)",
+    html:`
+      <h2>Prompt library — the exact prompts we use at every stage</h2>
+      <p class="lead"><b>What:</b> ready-to-paste prompts for each step of the journey, in the order you hit
+      them. <b>Why:</b> interns don't need to invent wording — they copy, fill in the [brackets], and go.
+      Teach the <em>shape</em>: state who you are, what you want, and what "done" looks like.</p>
+      <div class="callout coach"><span class="h">👩‍🏫 Coach note</span>
+      Everything in [square brackets] is a blank the intern fills in. Encourage them to add their own context —
+      these are starting points, not magic spells.</div>
+
+      <h3>1) Create the CLAUDE.md (project memory)</h3>
+      <p>Run once at the start, so Claude knows your project every session.</p>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "Run <code>/init</code> to create a CLAUDE.md for this project. It's a [React + Vite] app that [collects
+      teacher info and saves it to Excel via Microsoft Graph]. Include: what the project is, how to run it
+      (<code>npm run dev</code>) and test it (<code>npm test</code>), our conventions (keep the UI simple), and
+      rules like 'never commit secrets'. Ask me anything you're unsure about first."</div>
+
+      <h3>2) Create the React app with Vite</h3>
+      <p>The scaffolding step — Claude sets up the empty project and runs the commands.</p>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "I'm a beginner. Create a new React app using Vite in this folder, install the dependencies, and start the
+      dev server so I can see it in the browser. Tell me each command you run and what it does, and don't move
+      on until the starter page is showing."</div>
+
+      <h3>3) Write the specification</h3>
+      <p>Before building any feature — turn a rough idea into a clear, testable spec.</p>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "Here's my rough idea: [what it's for, who uses it &amp; how, what info it captures, the rules, what
+      success looks like]. Turn this into a short, clear specification in plain English. Keep it to <em>what</em>,
+      not <em>how</em>. Ask me about anything unclear before we build."</div>
+
+      <h3>4) Build a feature (plan first)</h3>
+      <p>For anything non-trivial, get the plan and approve it before code changes.</p>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "I want to add [the teacher form with name, email, subject, years of experience]. <b>Before writing any
+      code, show me your plan</b> — which files you'll create or change and the approach. Wait for me to approve
+      it. Then build it in small steps and explain what changed after each one."</div>
+
+      <h3>5) Write test cases, then unit tests</h3>
+      <p>Two prompts: first list the cases (from the spec), then turn them into runnable tests.</p>
+      <div class="promptbox"><div class="label">Say to Claude — list the cases</div>
+      "Using our specification, list the test cases we should cover — one row per rule, as
+      'input → expected result'. Include the edge cases: empty fields, an invalid email, and a valid submission."</div>
+      <div class="promptbox"><div class="label">Say to Claude — write the unit tests</div>
+      "Now write unit tests for those cases using [the project's test setup]. Then run <code>npm test</code>,
+      show me the results, and if anything fails, explain why and fix it."</div>
+
+      <h3>6) Turn repeated steps into a Skill</h3>
+      <p>When you've explained the same multi-step task more than twice, capture it once.</p>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "We keep doing the same steps for [adding a new form field end to end]. Help me turn this into a Claude
+      Code skill: create the SKILL.md with a clear name and a description of when to use it, write out the steps,
+      and tell me where it's saved."</div>
+
+      <h3>7) Document the discussion when context gets long</h3>
+      <p>Before a chat gets crowded, save the important decisions so a fresh chat can pick up cleanly.</p>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "This conversation is getting long. Summarise what we've decided and done so far — the goal, key decisions,
+      what's built, what's left, and any gotchas — into a short markdown note I can save as
+      <code>docs/notes/[feature].md</code>. Then I'll start a fresh chat (<code>/clear</code>) and paste it back."</div>
+
+      <h3>8) Fix an error</h3>
+      <p>The core debugging loop — paste the whole error with context.</p>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "I hit this error. Here's what I did: [action], what I expected: [result], and the full error/terminal
+      output: [paste it all]. What's causing it and how do we fix it?"</div>
+
+      <h3>9) Save your work (commit &amp; push)</h3>
+      <p>After every working step, so you can always rewind.</p>
+      <div class="promptbox"><div class="label">Say to Claude</div>
+      "Commit and push my progress with a clear message describing what we just did."</div>
+
+      <div class="callout say"><span class="h">🗣️ Say to the intern</span>
+      "You'll reuse these all week. Learn the pattern behind them — say who you are, exactly what you want, and
+      what 'done' looks like — and you can write your own for anything."</div>
+    `
+  },
+  {
     id:"troubleshooting",
-    title:"21 · Troubleshooting & glossary",
+    title:"22 · Troubleshooting & glossary",
     html:`
       <h2>Troubleshooting &amp; glossary</h2>
       <h3>Quick help (keep this handy while teaching)</h3>
@@ -824,7 +972,7 @@ const MODULES = [
   },
   {
     id:"coach-notes",
-    title:"22 · Prerequisites & facilitation",
+    title:"23 · Prerequisites & facilitation",
     html:`
       <h2>Prerequisites & facilitation</h2>
       <h3>Sort these before the relevant sessions</h3>
