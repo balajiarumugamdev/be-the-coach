@@ -14,8 +14,8 @@ React site  ──fetch──►  Apps Script web app (/exec)  ──►  Google
                          (grades quizzes, reads/writes)
 ```
 
-The Apps Script is the backend. The Sheet is the database. Answer keys live inside the
-script (server-side), so they're never sent to the browser.
+The Apps Script is the backend. The Sheet is the database. Answer keys live in a private
+`AnswerKeys` tab in the Sheet (not in the code or the browser), so grading is server-side only.
 
 ## Steps
 
@@ -88,9 +88,9 @@ After editing `Code.gs`: **Deploy → Manage deployments → ✏ edit → Versio
 | POST | `note` | coach note shown to the trainee |
 
 ## Notes & limits
-- **Grading is server-side:** the browser sends the delivered question ids + chosen answers;
-  the script scores them against `ANSWER_KEYS` and returns only pass/fail + score.
-- **Answer keys** live in `Code.gs`. Keep this repo private (it is) — and they still never
-  ship to the browser regardless.
+- **Grading is server-side:** the browser sends the delivered question ids + the trainee's
+  chosen options; the script scores them against the `AnswerKeys` tab and returns only pass/fail.
+- **Answer keys** live only in the private **`AnswerKeys`** tab (not in the code, not in the
+  browser). Populate it once with the throwaway `seedAnswerKeys()` snippet, then delete that snippet.
 - **Quotas:** Apps Script is fine for small cohorts (well within free quotas). Not built for
   thousands of concurrent writes — that's the signal to move to the Supabase approach.

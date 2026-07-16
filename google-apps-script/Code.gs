@@ -2,8 +2,8 @@
  * Leaps Up — Google Apps Script backend
  * ------------------------------------------------------------------
  * One web app that the static React site calls. It owns:
- *   - the Google Sheet (Roster, Attempts, ContentReview, CoachNotes, HelpRequests)
- *   - server-side quiz grading (answer keys live HERE, never in the browser)
+ *   - the Google Sheet (Roster, Attempts, ContentReview, CoachNotes, HelpRequests, AnswerKeys)
+ *   - server-side quiz grading (answer keys live in the private AnswerKeys tab, never in the browser)
  *
  * SETUP (once):
  *   1. Create a blank Google Sheet.
@@ -20,34 +20,17 @@
 
 var PASS_THRESHOLD = 0.8;
 
-/** Correct answers by course → questionId → correct option index.
- *  These stay server-side. The client only ever receives questions + options. */
-var ANSWER_KEYS = {
-  "gform-app": {
-    m0q1: 1, m0q2: 0, m0q3: 1, m0q4: 1, m0q5: 1, m0q6: 1,
-    m1q1: 1, m1q2: 1, m1q3: 1, m1q4: 1, m1q5: 1,
-    m2q1: 1, m2q2: 0, m2q3: 1, m2q4: 1, m2q5: 1,
-    m3q1: 1, m3q2: 1, m3q3: 1, m3q4: 1, m3q5: 1,
-    m4q1: 1, m4q2: 1, m4q3: 1, m4q4: 1, m4q5: 1,
-    m5q1: 1, m5q2: 1, m5q3: 1, m5q4: 0, m5q5: 1,
-    m6q1: 1, m6q2: 0, m6q3: 1, m6q4: 1, m6q5: 1,
-    m7q1: 1, m7q2: 1, m7q3: 1, m7q4: 1, m7q5: 1,
-    m8q1: 1, m8q2: 1, m8q3: 1, m8q4: 1, m8q5: 1,
-    m9q1: 1, m9q2: 1, m9q3: 1, m9q4: 1, m9q5: 0,
-    m10q1: 1, m10q2: 1, m10q3: 1, m10q4: 1, m10q5: 1
-  },
-  "reports-python": {
-    t0q1: 0, t0q2: 0, t0q3: 0, t0q4: 0, t0q5: 0,
-    t1q1: 0, t1q2: 0, t1q3: 0, t1q4: 0, t1q5: 0
-  }
-};
+// Correct answers live in the private `AnswerKeys` tab of the Sheet (NOT in this file, so they
+// aren't in the public repo). Columns: course_id | question_id | correct_index.
+// Populate it once with seedAnswerKeys() (a temporary snippet), then delete that snippet.
 
 var TABS = {
   Roster: ["token", "name", "email", "role", "track", "start_date"],
   Attempts: ["timestamp", "token", "course_id", "module_id", "attempt_no", "score", "passed", "question_results"],
   ContentReview: ["course_id", "module_id", "status", "feedback", "reviewer", "updated_at"],
   CoachNotes: ["course_id", "module_id", "note", "updated_at"],
-  HelpRequests: ["timestamp", "token", "course_id", "module_id", "message", "status"]
+  HelpRequests: ["timestamp", "token", "course_id", "module_id", "message", "status"],
+  AnswerKeys: ["course_id", "question_id", "correct_index"]
 };
 
 /* ============================ SETUP ============================ */
@@ -187,8 +170,16 @@ function content_() {
   return { ok: true, review: review, notes: notes };
 }
 
+function answerKey_(courseId) {
+  var map = {};
+  readRows_("AnswerKeys").forEach(function (r) {
+    if (String(r.course_id) === String(courseId)) map[r.question_id] = Number(r.correct_index);
+  });
+  return map;
+}
+
 function grade_(body) {
-  var keys = ANSWER_KEYS[body.course] || {};
+  var keys = answerKey_(body.course);
   var delivered = body.delivered || [];      // array of question ids shown
   var answers = body.answers || {};          // { qid: optionIndex }
   var correct = 0;

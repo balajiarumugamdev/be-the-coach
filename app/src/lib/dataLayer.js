@@ -4,7 +4,7 @@
    are interchangeable. Views never import store.js or api.js directly. */
 
 import { USE_BACKEND } from "../config.js";
-import { COURSES, ROSTER, findUser, coursesForTrack } from "../data/mockData.js";
+import { COURSES, ROSTER, findUser, coursesForTrack } from "../data/courses.js";
 import * as local from "./store.js";
 import * as api from "./api.js";
 

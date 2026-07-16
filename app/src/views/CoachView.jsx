@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { COURSES, ROSTER } from "../data/mockData.js";
+import { COURSES, ROSTER } from "../data/courses.js";
 import { loadContent, loadHelp, saveReview, saveNote } from "../lib/dataLayer.js";
 import { useAsync } from "../lib/useAsync.js";
 import Loading from "../components/Loading.jsx";

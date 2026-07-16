@@ -1,29 +1,13 @@
-import { ROSTER, ROLE_LABELS } from "../data/mockData.js";
-
+// Shown when someone opens the site without a ?t=<token> link.
 export default function Launcher() {
   return (
-    <div>
-      <div className="text-center mb-9">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Leaps Up — Prototype</h1>
-        <p className="text-slate-500">
-          Pick a role to open its personal link. Each link is what a real person would receive.
-        </p>
-      </div>
-      <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(260px,1fr))]">
-        {ROSTER.map((r) => (
-          <a
-            key={r.token}
-            href={`?t=${r.token}`}
-            className="block bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:border-blue-500 hover:-translate-y-0.5 transition no-underline"
-          >
-            <h3 className="font-semibold text-slate-900 mb-1">{ROLE_LABELS[r.role]}</h3>
-            <p className="text-sm text-slate-500 m-0">
-              Open as <strong>{r.name}</strong>
-            </p>
-            <div className="mt-3 text-xs text-slate-400">?t={r.token}</div>
-          </a>
-        ))}
-      </div>
+    <div className="max-w-xl mx-auto text-center py-20">
+      <h1 className="text-3xl font-bold text-slate-900 mb-3">Leaps Up</h1>
+      <p className="text-slate-600 mb-2">Welcome to the training platform.</p>
+      <p className="text-slate-500">
+        Please open the <strong>personal link</strong> your coach shared with you to sign in.
+        If you don't have one, reach out to your coach.
+      </p>
     </div>
   );
 }

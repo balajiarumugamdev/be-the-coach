@@ -127,11 +127,15 @@ To support #4, `Attempts` should also record the per-question outcome (e.g. a
 
 ## Known trade-offs (revisit later)
 
-- **Public repo → answers exposed (accepted for now, 2026-07-15).** Deploying on GitHub Pages
-  free requires a public repo, which exposes the quiz answer keys (see Repo visibility above).
-  This weakens the "80% gate can't be bypassed" guarantee. Mitigation for now: the repo link is
-  not shared. **Planned fix:** switch to a **private repo + Vercel** (Vercel deploys private
-  repos free), and move answer keys out of the client — then the gate is meaningful again.
+- **Answer-key exposure — closed (2026-07-16).**
+  - ✅ **Client bundle:** `answer` fields stripped from `courses.js` — the deployed app ships no
+    answers; grading is server-side and the browser sends only the trainee's chosen options.
+  - ✅ **Code out of the repo:** `ANSWER_KEYS` removed from `google-apps-script/Code.gs`; grading
+    now reads a private **`AnswerKeys`** Sheet tab (`course_id | question_id | correct_index`),
+    populated once via a throwaway `seedAnswerKeys()` snippet that is never committed.
+  - ⚠️ **Git history caveat:** the old `ANSWER_KEYS` still exists in prior commits of the public
+    repo. Current files are clean, but a full purge would need history rewrite (BFG/filter-repo)
+    — do that (or go private repo + Vercel) if the historical exposure matters.
 
 ## Open items
 

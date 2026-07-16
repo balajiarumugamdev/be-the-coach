@@ -1,4 +1,4 @@
-import { COURSES, coursesForTrack } from "../data/mockData.js";
+import { COURSES, coursesForTrack } from "../data/courses.js";
 import { loadDashboard } from "../lib/dataLayer.js";
 import { useAsync } from "../lib/useAsync.js";
 import Loading from "../components/Loading.jsx";

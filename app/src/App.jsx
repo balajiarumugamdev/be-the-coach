@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ROLE_LABELS } from "./data/mockData.js";
+import { ROLE_LABELS } from "./data/courses.js";
 import { loadBootstrap } from "./lib/dataLayer.js";
 import { useAsync } from "./lib/useAsync.js";
 import TopBar from "./components/TopBar.jsx";
@@ -44,7 +44,7 @@ export default function App() {
   if (!token) {
     inner = <Launcher />;
   } else if (!boot && loading) {
-    inner = <Loading label="Connecting to the server… the first load can take a few seconds." />;
+    inner = <Loading label="Signing you in…" />;
   } else if (!boot || !boot.user) {
     inner = <AccessDenied />;
   } else {

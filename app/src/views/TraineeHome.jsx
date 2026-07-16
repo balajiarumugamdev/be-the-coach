@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { coursesForTrack } from "../data/mockData.js";
+import { coursesForTrack } from "../data/courses.js";
 import { gradeQuiz, sendHelp } from "../lib/dataLayer.js";
 import CourseIntro from "./CourseIntro.jsx";
 import CourseView from "./CourseView.jsx";

@@ -6,7 +6,7 @@
    For now everything lives in one localStorage object so Coach/Manager views can see
    what a Trainee did in the same browser. */
 
-import { COURSES } from "../data/mockData.js";
+import { COURSES } from "../data/courses.js";
 
 const KEY = "leapsup_v1";
 
@@ -51,6 +51,9 @@ function addAttempt(token, courseId, moduleId, record) {
 
 /* ---------- grading (simulates the server-side endpoint) ---------- */
 // selected = { questionId: optionIndex }, questions = the delivered subset
+// NOTE: answers were stripped from courses.js (they now live only server-side in Code.gs),
+// so this LOCAL grader can no longer validate answers — it's a dev stub. Real grading always
+// runs server-side (USE_BACKEND=true → api.gradeQuiz). Local mock mode will not pass quizzes.
 export function grade(token, courseId, moduleId, questions, selected) {
   const course = COURSES[courseId];
   const module = course.modules.find((m) => m.id === moduleId);
